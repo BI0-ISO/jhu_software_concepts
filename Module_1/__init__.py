@@ -9,14 +9,13 @@
 # if __name__ == "__main__":
 #     app.run(host="0.0.0.0", port=8000, debug=True)
 
-
-
 from flask import Flask
-
-from Module_1 import pages
 
 def create_app():
     app = Flask(__name__)
 
-    app.register_blueprint(pages.bp)
+    # Import blueprint here, inside the function to avoid circular imports
+    from Module_1.board.pages import bp
+    app.register_blueprint(bp)
+
     return app
