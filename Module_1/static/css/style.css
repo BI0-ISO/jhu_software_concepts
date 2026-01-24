@@ -39,13 +39,12 @@ body {
     flex-direction: column;
 }
 
-/* 🔹 UPDATED: content pushed slightly right */
+/* Content padding */
 .page-container {
     flex: 1;
     padding-left: 3.5rem;
 }
 
-/* Mobile adjustment */
 @media (max-width: 600px) {
     .page-container {
         padding-left: 2rem;
@@ -106,9 +105,7 @@ body {
     border-bottom: 2px solid var(--hopkins-gold);
 }
 
-/* =====================
-   Dark Mode Toggle
-   ===================== */
+/* Dark Mode Toggle */
 .theme-toggle {
     margin-left: 2rem;
     background: none;
@@ -126,6 +123,11 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 4rem;
+    height: calc(100vh - 150px); /* vertically center content */
+}
+
+.home-text {
+    margin-top: -50px; /* raise text slightly */
 }
 
 .home-text h1 {
@@ -144,14 +146,59 @@ body {
     color: var(--text-secondary);
 }
 
+/* Home Page main image (centered vertically, slightly right) */
+.home-main-image {
+    max-width: 400px;
+    margin-right: 3rem;
+    border-radius: 12px;
+    border: 3px solid var(--hopkins-gold);
+    box-shadow: 0 12px 25px rgba(0, 45, 114, 0.25);
+    align-self: center;
+}
+
 /* =====================
-   Image
+   About Page Layout
    ===================== */
-.home-image img {
-    max-width: 320px;
-    border-radius: 50%;
-    border: 5px solid var(--hopkins-gold);
-    box-shadow: 0 12px 35px rgba(0, 45, 114, 0.25);
+.about-text {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-bottom: 3rem; /* space above gallery */
+}
+
+/* About Page gallery using flexbox for equal spacing */
+.about-gallery-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    max-width: 90%; /* some margin from sides */
+    margin: 2rem auto 2rem auto;
+    gap: 1rem;
+}
+
+/* About images */
+.about-gallery-grid img {
+    border: 2px solid var(--hopkins-blue);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    object-fit: cover;
+    transition: transform 0.2s ease;
+}
+
+/* Sizes: first and last image larger, middle two smaller for higher resolution */
+.about-gallery-grid img:nth-child(1),
+.about-gallery-grid img:nth-child(4) {
+    width: 23%;
+    height: auto;
+}
+
+.about-gallery-grid img:nth-child(2),
+.about-gallery-grid img:nth-child(3) {
+    width: 17%;
+    height: auto;
+}
+
+.about-gallery-grid img:hover {
+    transform: scale(1.05);
 }
 
 /* =====================
@@ -175,9 +222,7 @@ body {
     color: #FFD670;
 }
 
-/* =====================
-   GitHub Link
-   ===================== */
+/* GitHub Link */
 .github-link {
     font-weight: 600;
     color: var(--hopkins-blue);
@@ -187,9 +232,7 @@ body {
     color: var(--hopkins-gold);
 }
 
-/* =====================
-   Footer (🔹 UPDATED: smaller height)
-   ===================== */
+/* Footer (smaller height) */
 .footer {
     padding: 1rem 1.5rem;
     background-color: var(--hopkins-blue);
@@ -199,11 +242,34 @@ body {
 }
 
 /* =====================
-   Responsive
+   Responsive Adjustments
    ===================== */
 @media (max-width: 900px) {
     .home-layout {
         flex-direction: column-reverse;
         text-align: center;
+        height: auto;
+    }
+
+    .home-main-image {
+        margin-right: 0;
+        margin-top: 1rem;
+        max-width: 300px;
+    }
+
+    .about-gallery-grid {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.8rem;
+    }
+
+    .about-gallery-grid img:nth-child(1),
+    .about-gallery-grid img:nth-child(4) {
+        width: 40%;
+    }
+
+    .about-gallery-grid img:nth-child(2),
+    .about-gallery-grid img:nth-child(3) {
+        width: 30%;
     }
 }
