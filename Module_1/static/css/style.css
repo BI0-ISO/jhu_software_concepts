@@ -1,43 +1,126 @@
+/* =====================
+   CSS Variables
+   ===================== */
+:root {
+    --hopkins-blue: #002D72;
+    --hopkins-gold: #F2A900;
+    --background: #F7F9FC;
+    --text-primary: #002D72;
+    --text-secondary: #1A3B6F;
+}
+
+/* Dark mode */
+[data-theme="dark"] {
+    --background: #0F172A;
+    --text-primary: #E5E7EB;
+    --text-secondary: #CBD5E1;
+}
+
+/* =====================
+   Base
+   ===================== */
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background-color: #f9f9f9;
-    color: #333;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: var(--background);
+    color: var(--text-primary);
 }
 
-/* Navigation */
+/* =====================
+   Layout (Sticky Footer)
+   ===================== */
+.layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 🔹 UPDATED: content pushed slightly right */
+.page-container {
+    flex: 1;
+    padding-left: 3.5rem;
+}
+
+/* Mobile adjustment */
+@media (max-width: 600px) {
+    .page-container {
+        padding-left: 2rem;
+    }
+}
+
+/* =====================
+   Page Transitions
+   ===================== */
+.fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =====================
+   Navigation
+   ===================== */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
-    background-color: #ffffff;
-    border-bottom: 1px solid #ddd;
+    padding: 1.25rem 2.5rem;
+    background-color: var(--hopkins-blue);
 }
 
-.navbar a {
-    margin-left: 1.5rem;
+.nav-left {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.nav-right a {
+    margin-left: 2rem;
     text-decoration: none;
-    color: #333;
+    color: #E6ECF5;
     font-weight: 500;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
 }
 
-.navbar a:hover {
-    color: #0077cc;
+.nav-right a:hover {
+    color: var(--hopkins-gold);
 }
 
-/* Page wrapper */
-.page-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 3rem 2rem;
+.nav-right a.active {
+    color: var(--hopkins-gold);
+    border-bottom: 2px solid var(--hopkins-gold);
 }
 
-/* Home layout */
+/* =====================
+   Dark Mode Toggle
+   ===================== */
+.theme-toggle {
+    margin-left: 2rem;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #ffffff;
+}
+
+/* =====================
+   Home Layout
+   ===================== */
 .home-layout {
     display: flex;
     align-items: center;
@@ -45,61 +128,82 @@ body {
     gap: 4rem;
 }
 
-.home-text {
-    flex: 1;
-}
-
 .home-text h1 {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
+    font-size: 3.2rem;
 }
 
 .home-text h2 {
-    font-size: 1.5rem;
-    color: #666;
+    font-size: 1.6rem;
+    color: #4A90E2;
     margin-bottom: 1.5rem;
 }
 
 .home-text p {
     font-size: 1.1rem;
-    line-height: 1.6;
+    line-height: 1.7;
+    color: var(--text-secondary);
 }
 
-/* Image */
-.home-image {
-    flex: 1;
-    text-align: right;
-}
-
+/* =====================
+   Image
+   ===================== */
 .home-image img {
-    max-width: 300px;
+    max-width: 320px;
     border-radius: 50%;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 5px solid var(--hopkins-gold);
+    box-shadow: 0 12px 35px rgba(0, 45, 114, 0.25);
 }
 
-/* Projects */
-.project-list li {
-    margin-bottom: 1rem;
-}
-
+/* =====================
+   Projects
+   ===================== */
 .project-list a {
     text-decoration: none;
-    color: #0077cc;
-    font-weight: 500;
+    color: var(--hopkins-blue);
+    font-weight: 600;
 }
 
 .project-list a:hover {
-    text-decoration: underline;
+    color: #4A90E2;
 }
 
-/* Responsive */
+[data-theme="dark"] .project-list a {
+    color: var(--hopkins-gold);
+}
+
+[data-theme="dark"] .project-list a:hover {
+    color: #FFD670;
+}
+
+/* =====================
+   GitHub Link
+   ===================== */
+.github-link {
+    font-weight: 600;
+    color: var(--hopkins-blue);
+}
+
+[data-theme="dark"] .github-link {
+    color: var(--hopkins-gold);
+}
+
+/* =====================
+   Footer (🔹 UPDATED: smaller height)
+   ===================== */
+.footer {
+    padding: 1rem 1.5rem;
+    background-color: var(--hopkins-blue);
+    color: #ffffff;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+/* =====================
+   Responsive
+   ===================== */
 @media (max-width: 900px) {
     .home-layout {
         flex-direction: column-reverse;
-        text-align: center;
-    }
-
-    .home-image {
         text-align: center;
     }
 }
