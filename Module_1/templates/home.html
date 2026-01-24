@@ -3,9 +3,22 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <h1>Welcome 👋</h1>
-    <p>This is my clean Flask website.</p>
-    <img src="{{ url_for('static', filename='images/Module_1_Heart.jpg') }}" alt="Profile photo">
-</section>
+<div class="home-layout">
+
+    <div class="home-text">
+        <h1>Your Name</h1>
+        <h2>Your Position / Title</h2>
+
+        <p>
+            This is your bio. Write a short paragraph about who you are,
+            what you do, and what you’re interested in. Keep it friendly
+            and professional.
+        </p>
+    </div>
+
+    <div class="home-image">
+        <img src="{{ url_for('static', filename='images/Module_1_Heart.jpg') }}" alt="Profile picture">
+    </div>
+
+</div>
 {% endblock %}
