@@ -16,7 +16,7 @@ Access Command for code: **python run.py**
 **Information for Instructors:** 
 
 - Please enjoy the website and its associated pages! I had an amazing time creating the framework and trying to make everything look nice.
-- You should be able to easily access the Home page use the command above and from there it should be a seamless navigation to my About Me page, my Project Repo page, and the page containing              information about the Module 1 Assignment
+- You should be able to easily access the Home page using the command above and from there it should be a seamless navigation to my About Me page, my Project Repo page, and the page containing              information about the Module 1 Assignment
 - If there is anything you feel that could have been coded better or if you feel things should have been organized differently please let me know! I am always excited to learn and provide a better product.  
 
 **Assignment Check List (All SHALLS and SHOULDS):** 
