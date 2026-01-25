@@ -15,14 +15,3 @@ def create_app():
     app.register_blueprint(bp)
     return app
 
-# """ from flask import Flask
-
-# def create_app():
-#     app = Flask(__name__)
-
-#     # Import blueprint here, inside the function to avoid circular imports
-#     from Module_1.board.pages import bp
-#     app.register_blueprint(bp)
-
-#     return app
-#  """
