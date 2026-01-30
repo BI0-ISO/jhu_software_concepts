@@ -2,6 +2,10 @@
 # Dealing with HTTP requests 
 import urllib3
 
+from bs4 import BeautifulSoup
+
+import re
+
 # Sends requests to GrabCafe - Acts as a browser engine 
 http = urllib3.PoolManager()
 
@@ -38,26 +42,52 @@ def scrape_data(start_entry, end_entry):
 
             # Something I found when trying to break this code, is that when you input an entry that is not valid 
             # the website still works but only a notifcation entry is provided and spits out 31/12/1969
+        
 
+            soup = BeautifulSoup(response.data.decode("utf-8"), "html.parser")
+
+            # Converting the html data into a nicer for to find the information that I want 
+
+            text = soup.get_text(separator="\n")
+
+            # Using Regex to find the notification date 
+
+            error_check = re.search(r"on\s+(\d{2}/\d{2}/\d{4})", text)
+            
+
+            # If a date is found then, boom we have a new variable, if not, no worries, it is None 
+
+            if error_check:
+                invalid_entry_check = error_check.group(1).strip()
+            else:
+                invalid_entry_check = None
+
+
+            # Here I do 2 checks, 1) is the website good, and 2) does the date match the error date I am looking for 
             if response.status == 200:
-
-                print(response.status)
-
-                raw_data.append({
+                if invalid_entry_check == "31/12/1969":
+                    print(f"Invalid Entry Detected for {url}")
+                
+                # If I get a 200 and the date does not match, I want to save the data
+                else:
+                    raw_data.append({
                         "url": url,
                         "html": response.data.decode("utf-8")
-                        })
-                
+                    })
 
-        # If there is something that is wrong with this site, just keep on to the next one        
-        except: 
-            continue 
+        # If the response is not a 200 for some reason, I want to know 1) why my code didn't work and 2) what error did I get 
+        except Exception as e:
+            print(f"HTTP error for {url}: {e}")
+            continue
 
     return raw_data
     
 
+# This is a check to make sure the code catches entries that aren't actually entries 
 
-test = scrape_data(9000000,9000001)
+#test_Invalid = scrape_data(9000000,9000001)
+
+
 
 
 
