@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}About Me{% endblock %}
+
+{% block content %}
+<div class="about-text">
+    <h1>About Me</h1>
+    <p>
+      I’m a biomedical engineer with a deep love for exploring the outdoors, 
+      whether it’s hiking through local trails or taking on weekend adventures. 
+      I’m also a proud foster fail to my spirited dog, Mamba Wamba—yes, 
+      really—who keeps life lively and unpredictable. I enjoy constantly sharpening my math skills and 
+      discovering how to apply them to real-world problems, bridging theory with tangible solutions. 
+      Alongside this, I have a fascination with tinkering with microcontrollers and building gadgets or 
+      hardware from scratch, whether for work projects or personal hobbies, combining curiosity, creativity, 
+      and engineering in every project I tackle.
+    </p>
+
+    <!-- Contact section -->
+    <h3>Contact Me</h3>
+    <p>Email: Samuel.McKey@jhuapl.edu</p>
+    <p>LinkedIn: 
+        <a href="https://www.linkedin.com/in/samuel-mckey-846a071b6" target="_blank">View My LinkedIn</a>
+    </p>
+</div>
+
+<!-- Dynamic grid gallery -->
+<div class="about-gallery-grid">
+    <img src="{{ url_for('static', filename='images/hiking.jpeg') }}" alt="Hiking">
+    <img src="{{ url_for('static', filename='images/micro.jpeg') }}" alt="Microcontroller">
+    <img src="{{ url_for('static', filename='images/math.jpeg') }}" alt="Math">
+    <img src="{{ url_for('static', filename='images/Mamba.jpg') }}" alt="Dog">
+</div>
+{% endblock %}
