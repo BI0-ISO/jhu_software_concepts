@@ -1,20 +1,31 @@
 # main.py
-from crawler import scrape_data
-from cleaner import clean_data, save_data
+from scrape import scrape_data
+from clean import clean_data, save_data
+
 
 def main():
-    # Step 1: scrape raw HTML
-    raw_pages = scrape_data(900000, 900100)
+    """
+    Orchestrates the GradCafe scraping and cleaning pipeline.
+    """
 
-    print(f"Scraped {len(raw_pages)} pages")
+    # ----- CONFIGURATION -----
+    START_ENTRY = 800000
+    END_ENTRY = 900000      # 30,000 entry window
+    OUTPUT_FILE = "applicant_data.json"
+    # -------------------------
 
-    # Step 2: clean and structure data
+    print("Starting GradCafe scrape...")
+    raw_pages = scrape_data(START_ENTRY, END_ENTRY)
+    print(f"Scraped {len(raw_pages)} valid applicant pages")
+
+    print("Cleaning and structuring data...")
     cleaned_data = clean_data(raw_pages)
 
-    # Step 3: save to JSON
-    save_data(cleaned_data)
+    print("Saving data to JSON...")
+    save_data(cleaned_data, OUTPUT_FILE)
 
-    print("Data saved to applicant_data.json")
+    print(f"Pipeline complete. Data saved to {OUTPUT_FILE}")
+
 
 if __name__ == "__main__":
     main()
