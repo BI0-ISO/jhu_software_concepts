@@ -1,13 +1,13 @@
 
 README.txt
 
-Name: [Your Name]  
-JHED ID: [Your JHED ID]
+Name: Samuel McKey  
+JHED ID: DDF40C
 
 Module Info:  
-Module: [Module Name/Number]  
+Module: Module 2
 Assignment: GradCafe Data Scraper and Cleaner  
-Due Date: [Assignment Due Date]
+Due Date: 2-1-26
 
 ---
 
