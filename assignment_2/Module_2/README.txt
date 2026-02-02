@@ -1,6 +1,7 @@
 
 README.txt
 
+<<<<<<< HEAD
 Name: [Your Name]  
 JHED ID: [Your JHED ID]
 
@@ -8,6 +9,15 @@ Module Info:
 Module: [Module Name/Number]  
 Assignment: GradCafe Data Scraper and Cleaner  
 Due Date: [Assignment Due Date]
+=======
+Name: Samuel McKey  
+JHED ID: DDF40C
+
+Module Info:  
+Module: Module 2
+Assignment: GradCafe Data Scraper and Cleaner  
+Due Date: 2-1-26
+>>>>>>> b218d296dd78c67a7242a850a77cdb87c4de2a2e
 
 ---
 
@@ -336,4 +346,8 @@ User-agent: Mediapartners-Google
 Disallow:
 
 User-agent: Opebot-v (https://www.1plusx.com (https://www.1plusx.com/)) 
+<<<<<<< HEAD
 Allow: /
+=======
+Allow: /
+>>>>>>> b218d296dd78c67a7242a850a77cdb87c4de2a2e
