@@ -1,0 +1,28 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ---------- Virtual Environments ----------
+venv/
+.env/
+.venv/
+env/
+
+# ---------- Environment variables ----------
+.env
+
+# ---------- Data files (large / sensitive) ----------
+data/
+*.json
+
+# ---------- VS Code ----------
+.vscode/
+
+# ---------- OS junk ----------
+.DS_Store
+Thumbs.db
+
+# ---------- Logs ----------
+*.log
