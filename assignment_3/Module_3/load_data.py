@@ -1,97 +1,107 @@
+import os
 import json
+from datetime import datetime
 import psycopg
-from db_config import DB_CONFIG
 
-DATA_PATH = "data/cleaned_grad_cafe.json"
+# Load database config from .env
+from dotenv import load_dotenv
+load_dotenv()
 
+DB_CONFIG = {
+    "dbname": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+}
 
+# Helper function to parse dates in DD/MM/YYYY format
+def parse_date(date_str):
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, "%d/%m/%Y").date()
+    except ValueError:
+        return None
+
+# Load JSON Lines from data folder
+def load_json():
+    records = []
+    json_path = os.path.join(os.path.dirname(__file__), "data", "llm_extend_applicant_data.json")
+    with open(json_path, "r") as f:
+        for line in f:
+            if line.strip():
+                records.append(json.loads(line))
+    return records
+
+# Create the PostgreSQL table
 def create_table(conn):
     with conn.cursor() as cur:
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS applicants (
-                p_id INTEGER PRIMARY KEY,
-                program TEXT,
-                comments TEXT,
-                date_added DATE,
-                url TEXT,
-                status TEXT,
-                term TEXT,
-                us_or_international TEXT,
-                gpa FLOAT,
-                gre FLOAT,
-                gre_v FLOAT,
-                gre_aw FLOAT,
-                degree TEXT,
-                llm_generated_program TEXT,
-                llm_generated_university TEXT
-            );
+        CREATE TABLE IF NOT EXISTS applicants (
+            p_id SERIAL PRIMARY KEY,
+            program TEXT,
+            comments TEXT,
+            date_added DATE,
+            url TEXT,
+            status TEXT,
+            term TEXT,
+            us_or_international TEXT,
+            gpa FLOAT,
+            gre FLOAT,
+            gre_v FLOAT,
+            gre_aw FLOAT,
+            degree TEXT,
+            llm_generated_program TEXT,
+            llm_generated_university TEXT
+        );
         """)
         conn.commit()
+    print("✅ Table 'applicants' ready.")
 
-
-def load_json():
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def transform_record(raw, p_id):
-    """Map module-2 JSON fields to assignment schema"""
-
-    term = None
-    if raw.get("start_term") and raw.get("start_year"):
-        term = f"{raw['start_term']} {raw['start_year']}"
-
-    return {
-        "p_id": p_id,
-        "program": raw.get("program"),
-        "comments": raw.get("comments"),
-        "date_added": raw.get("date_added"),
-        "url": raw.get("url"),
-        "status": raw.get("applicant_status"),
-        "term": term,
-        "us_or_international": raw.get("citizenship"),
-        "gpa": raw.get("gpa"),
-        "gre": raw.get("gre_total"),
-        "gre_v": raw.get("gre_verbal"),
-        "gre_aw": raw.get("gre_aw"),
-        "degree": raw.get("degree_type"),
-        "llm_generated_program": raw.get("llm_generated_program"),
-        "llm_generated_university": raw.get("llm_generated_university"),
-    }
-
-
-def insert_data(conn, raw_records):
+# Insert data into PostgreSQL
+def insert_data(conn, records):
     with conn.cursor() as cur:
-        for i, raw in enumerate(raw_records, start=1):
-            record = transform_record(raw, i)
+        for idx, rec in enumerate(records, start=1):
+            record = {
+                "p_id": idx,
+                "program": rec.get("program"),
+                "comments": rec.get("comments"),
+                "date_added": parse_date(rec.get("date_added")),
+                "url": rec.get("url"),
+                "status": rec.get("applicant_status"),
+                "term": f"{rec.get('start_term')} {rec.get('start_year')}" if rec.get("start_term") else None,
+                "us_or_international": rec.get("citizenship"),
+                "gpa": rec.get("gpa"),
+                "gre": rec.get("gre_total"),
+                "gre_v": rec.get("gre_verbal"),
+                "gre_aw": rec.get("gre_aw"),
+                "degree": rec.get("degree_type"),
+                "llm_generated_program": rec.get("llm_generated_program"),
+                "llm_generated_university": rec.get("llm_generated_university"),
+            }
 
             cur.execute("""
-                INSERT INTO applicants (
-                    p_id, program, comments, date_added, url, status,
-                    term, us_or_international, gpa, gre, gre_v, gre_aw,
-                    degree, llm_generated_program, llm_generated_university
-                ) VALUES (
-                    %(p_id)s, %(program)s, %(comments)s, %(date_added)s, %(url)s, %(status)s,
-                    %(term)s, %(us_or_international)s, %(gpa)s, %(gre)s, %(gre_v)s, %(gre_aw)s,
-                    %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s
-                )
-                ON CONFLICT (p_id) DO NOTHING;
+            INSERT INTO applicants (
+                p_id, program, comments, date_added, url, status, term,
+                us_or_international, gpa, gre, gre_v, gre_aw, degree,
+                llm_generated_program, llm_generated_university
+            ) VALUES (
+                %(p_id)s, %(program)s, %(comments)s, %(date_added)s, %(url)s, %(status)s, %(term)s,
+                %(us_or_international)s, %(gpa)s, %(gre)s, %(gre_v)s, %(gre_aw)s, %(degree)s,
+                %(llm_generated_program)s, %(llm_generated_university)s
+            )
+            ON CONFLICT (p_id) DO NOTHING;
             """, record)
-
         conn.commit()
+    print(f"✅ Inserted {len(records)} records into 'applicants'.")
 
-
+# Main function
 def main():
-    conn = psycopg.connect(**DB_CONFIG)
-
-    create_table(conn)
-
-    raw_records = load_json()
-    insert_data(conn, raw_records)
-
-    conn.close()
-    print("✅ Data successfully loaded into PostgreSQL.")
-
+    records = load_json()
+    with psycopg.connect(**DB_CONFIG) as conn:
+        create_table(conn)
+        insert_data(conn, records)
 
 if __name__ == "__main__":
     main()
