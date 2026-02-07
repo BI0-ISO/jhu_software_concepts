@@ -3,20 +3,155 @@
 {% block title %}Module 3 Project{% endblock %}
 
 {% block content %}
-<h1>Module 3 Project – PostgreSQL Queries</h1>
+{% if pull_running %}
+<meta http-equiv="refresh" content="10">
+{% endif %}
+<div class="module3-page">
+<section class="module3-hero">
+    <div class="module3-hero-text">
+        <h1>Module 3 Project – PostgreSQL Queries</h1>
+        <p>Key applicant insights from the 2026 cycle, summarized from the database.</p>
+    </div>
+    <div class="module3-hero-actions">
+        <div class="module3-hero-badge">PostgreSQL</div>
+        <div class="hero-action-stack">
+            <form action="{{ url_for('m3_pages.update_analysis') }}" method="post">
+                <button class="action-button" type="submit" {% if pull_running %}disabled{% endif %}>
+                    Update Analysis
+                </button>
+            </form>
+            <span class="action-help">
+                Refreshes the stats below with the newest data.
+                {% if pull_running %}Disabled while Pull Data is running.{% endif %}
+            </span>
+        </div>
+    </div>
+</section>
 
-<h2>Results</h2>
-<ul>
-    <li>Number of entries for Fall 2026: {{ results.fall_2026_count }}</li>
-    <li>Percentage of international students: {{ results.percent_international }}%</li>
-    <li>Average GPA, GRE, GRE V, GRE AW: {{ results.average_metrics }}</li>
-    <li>Average GPA of American students in Fall 2026: {{ results.avg_gpa_american_fall_2026 }}</li>
-    <li>Acceptance rate for Fall 2026: {{ results.acceptance_rate_fall_2026 }}%</li>
-    <li>Average GPA of acceptances in Fall 2026: {{ results.avg_gpa_acceptances_fall_2026 }}</li>
-    <li>Number of applicants to JHU for Master's in CS: {{ results.jhu_masters_cs }}</li>
-    <li>Acceptances for PhD 2026 (raw university names): {{ results.top_phd_acceptances_2026_raw }}</li>
-    <li>Acceptances for PhD 2026 (LLM-generated university names): {{ results.top_phd_acceptances_2026_llm }}</li>
-    <li>Additional Question 1 Result: {{ results.additional_question_1 }}</li>
-    <li>Additional Question 2 Result: {{ results.additional_question_2 }}</li>
-</ul>
+<section class="module3-actions">
+    <div class="action-card">
+        <div>
+            <h2>Pull New Data</h2>
+            <p>Fetches the latest GradCafe entries using the Module 2 scraper and inserts any new records into the database.</p>
+            {% if pull_running %}
+            <p class="action-note">A pull is currently running. This button will be re-enabled when it finishes.</p>
+            {% else %}
+            <p class="action-note">When the pull finishes (or reaches the max new records), you can run it again.</p>
+            {% endif %}
+        </div>
+        <form action="{{ url_for('m3_pages.pull_data') }}" method="post">
+            <button class="action-button" type="submit" {% if pull_running %}disabled{% endif %}>
+                Pull Data
+            </button>
+        </form>
+    </div>
+</section>
+
+{% if status_message %}
+<div class="status-banner">
+    {{ status_message }}
+</div>
+{% endif %}
+
+<section class="module3-section">
+    <h2 class="section-title">Snapshot</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Fall 2026 entries</div>
+            <div class="stat-value">{{ results.fall_2026_count }}</div>
+            <div class="stat-sub">Total applications</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">International share</div>
+            <div class="stat-value">{{ results.percent_international }}%</div>
+            <div class="stat-sub">Across all applications</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Acceptance rate</div>
+            <div class="stat-value">{{ results.acceptance_rate_fall_2026 }}%</div>
+            <div class="stat-sub">Fall 2026 applicants</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">JHU MS in CS</div>
+            <div class="stat-value">{{ results.jhu_masters_cs }}</div>
+            <div class="stat-sub">Applicants matching program</div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Applicant Metrics</h2>
+    <div class="content-card">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GPA</td>
+                    <td>{{ results.average_metrics.avg_gpa if results.average_metrics.avg_gpa is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Quant</td>
+                    <td>{{ results.average_metrics.avg_gre if results.average_metrics.avg_gre is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Verbal</td>
+                    <td>{{ results.average_metrics.avg_gre_v if results.average_metrics.avg_gre_v is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Analytical Writing</td>
+                    <td>{{ results.average_metrics.avg_gre_aw if results.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="split-grid">
+            <div class="split-item">
+                <div class="split-label">Avg GPA (American, Fall 2026)</div>
+                <div class="split-value">{{ results.avg_gpa_american_fall_2026 if results.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
+            </div>
+            <div class="split-item">
+                <div class="split-label">Avg GPA (Acceptances, Fall 2026)</div>
+                <div class="split-value">{{ results.avg_gpa_acceptances_fall_2026 if results.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Top PhD CS Acceptances (2026)</h2>
+    <div class="compare-grid">
+        <div class="stat-card">
+            <div class="stat-label">Raw university names</div>
+            <div class="stat-value">{{ results.top_phd_acceptances_2026_raw }}</div>
+            <div class="stat-sub">University field</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">LLM-generated names</div>
+            <div class="stat-value">{{ results.top_phd_acceptances_2026_llm }}</div>
+            <div class="stat-sub">LLM university field</div>
+        </div>
+    </div>
+    <p class="note">Comparing raw vs. LLM-normalized names helps capture acronyms and inconsistent university labels.</p>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Additional Insights</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">International count (Fall 2026)</div>
+            <div class="stat-value">{{ results.additional_question_1 }}</div>
+            <div class="stat-sub">Non‑American, non‑“Other”</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Avg GRE (PhD CS, Fall 2026)</div>
+            <div class="stat-value">{{ results.additional_question_2 if results.additional_question_2 is not none else "N/A" }}</div>
+            <div class="stat-sub">GRE Quant average</div>
+        </div>
+    </div>
+</section>
+</div>
 {% endblock %}

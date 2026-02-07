@@ -1,11 +1,10 @@
 CREATE TABLE IF NOT EXISTS applicants (
-    p_id INTEGER PRIMARY KEY,
+    p_id SERIAL PRIMARY KEY,
     program TEXT,
-    comments TEXT,
-    date_added DATE,
-    url TEXT,
-    status TEXT,
+    university TEXT,
     term TEXT,
+    year INTEGER,
+    status TEXT,
     us_or_international TEXT,
     gpa FLOAT,
     gre FLOAT,
@@ -13,5 +12,6 @@ CREATE TABLE IF NOT EXISTS applicants (
     gre_aw FLOAT,
     degree TEXT,
     llm_generated_program TEXT,
-    llm_generated_university TEXT
+    llm_generated_university TEXT,
+    source_url TEXT
 );

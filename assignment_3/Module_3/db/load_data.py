@@ -57,6 +57,7 @@ def normalize_record(r):
         "gre_aw": to_float(r.get("gre_aw")),
         "llm_generated_program": r.get("llm-generated-program"),
         "llm_generated_university": r.get("llm-generated-university"),
+        "source_url": r.get("url"),
     }
 
 def create_table(conn):
@@ -76,13 +77,15 @@ def create_table(conn):
             gre_aw FLOAT,
             degree TEXT,
             llm_generated_program TEXT,
-            llm_generated_university TEXT
+            llm_generated_university TEXT,
+            source_url TEXT
         )
         """)
         # Ensure required columns exist if table was created with an older schema
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS university TEXT")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS year INTEGER")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS us_or_international TEXT")
+        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS source_url TEXT")
     print("Table 'applicants' ready.")
 
 def insert_data(conn, records):
@@ -92,10 +95,10 @@ def insert_data(conn, records):
                 cur.execute("""
                     INSERT INTO applicants (
                         program, university, term, year, status, us_or_international, gpa, gre, gre_v, gre_aw,
-                        degree, llm_generated_program, llm_generated_university
+                        degree, llm_generated_program, llm_generated_university, source_url
                     ) VALUES (
                         %(program)s, %(university)s, %(term)s, %(year)s, %(status)s, %(us_or_international)s, %(gpa)s, %(gre)s, %(gre_v)s, %(gre_aw)s,
-                        %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s
+                        %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s, %(source_url)s
                     )
                 """, r)
             except Exception as e:

@@ -15,7 +15,9 @@ env/
 
 # ---------- Data files (large / sensitive) ----------
 data/
+M3_material/data/
 *.json
+*.jsonl
 
 # ---------- VS Code ----------
 .vscode/
@@ -26,3 +28,9 @@ Thumbs.db
 
 # ---------- Logs ----------
 *.log
+
+# ---------- Module 3 runtime files ----------
+db/pull_data.log
+db/pull_data.lock
+db/pull_data.done
+db/last_scraped_id.txt

@@ -1,3 +1,5 @@
 psycopg
 dotenv
 flask 
+beautifulsoup4
+urllib3
