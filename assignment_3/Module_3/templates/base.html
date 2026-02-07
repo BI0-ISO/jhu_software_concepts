@@ -12,18 +12,18 @@
     <div class="nav-left">My Portfolio</div>
 
     <div class="nav-right">
-        <a href="{{ url_for('pages.home') }}"
-           class="{% if request.endpoint == 'pages.home' %}active{% endif %}">
+        <a href="{{ url_for('m1_pages.home') }}"
+           class="{% if request.endpoint == 'm1_pages.home' %}active{% endif %}">
             Home
         </a>
 
-        <a href="{{ url_for('pages.about') }}"
-           class="{% if request.endpoint == 'pages.about' %}active{% endif %}">
+        <a href="{{ url_for('m1_pages.about') }}"
+           class="{% if request.endpoint == 'm1_pages.about' %}active{% endif %}">
             About
         </a>
 
-        <a href="{{ url_for('pages.projects') }}"
-           class="{% if request.endpoint == 'pages.projects' %}active{% endif %}">
+        <a href="{{ url_for('m1_pages.projects') }}"
+           class="{% if request.endpoint == 'm1_pages.projects' %}active{% endif %}">
             Projects
         </a>
 
