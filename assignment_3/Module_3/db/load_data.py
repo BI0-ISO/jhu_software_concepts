@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, date
 import psycopg
 from db_config import DB_CONFIG
 
@@ -42,13 +43,54 @@ def to_float(value):
     except (TypeError, ValueError):
         return None
 
+def to_date(value):
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    text = str(value).strip()
+    if not text:
+        return None
+    if len(text) >= 10 and text[:10].count("-") == 2 and text[:10][:4].isdigit():
+        return text[:10]
+    for fmt in (
+        "%d/%m/%Y",
+        "%m/%d/%Y",
+        "%b %d, %Y",
+        "%B %d, %Y",
+        "%b %d %Y",
+        "%B %d %Y",
+        "%d %b %Y",
+        "%d %B %Y",
+    ):
+        try:
+            return datetime.strptime(text, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+def combine_program_university(program, university):
+    if program and university and university not in program:
+        return f"{university} - {program}"
+    return program or university
+
 def normalize_record(r):
+    university = r.get("university")
+    program = r.get("program")
+    status = r.get("applicant_status")
+    term = r.get("start_term") if status == "accepted" else None
     return {
-        "program": r.get("program"),
-        "university": r.get("university"),
-        "term": r.get("start_term"),
+        "program": combine_program_university(program, university),
+        "comments": r.get("comments"),
+        "date_added": to_date(r.get("date_added")),
+        "acceptance_date": to_date(r.get("acceptance_date")),
+        "url": r.get("url"),
+        "university": university,
+        "term": term,
         "year": to_int(r.get("start_year")),
-        "status": r.get("applicant_status"),
+        "status": status,
         "us_or_international": r.get("citizenship"),
         "degree": r.get("degree_type"),
         "gpa": to_float(r.get("gpa")),
@@ -57,7 +99,6 @@ def normalize_record(r):
         "gre_aw": to_float(r.get("gre_aw")),
         "llm_generated_program": r.get("llm-generated-program"),
         "llm_generated_university": r.get("llm-generated-university"),
-        "source_url": r.get("url"),
     }
 
 def create_table(conn):
@@ -66,10 +107,12 @@ def create_table(conn):
         CREATE TABLE IF NOT EXISTS applicants (
             p_id SERIAL PRIMARY KEY,
             program TEXT,
-            university TEXT,
-            term TEXT,
-            year INTEGER,
+            comments TEXT,
+            date_added DATE,
+            acceptance_date DATE,
+            url TEXT,
             status TEXT,
+            term TEXT,
             us_or_international TEXT,
             gpa FLOAT,
             gre FLOAT,
@@ -78,14 +121,18 @@ def create_table(conn):
             degree TEXT,
             llm_generated_program TEXT,
             llm_generated_university TEXT,
-            source_url TEXT
+            university TEXT,
+            year INTEGER
         )
         """)
         # Ensure required columns exist if table was created with an older schema
+        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS comments TEXT")
+        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS date_added DATE")
+        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS acceptance_date DATE")
+        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS url TEXT")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS university TEXT")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS year INTEGER")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS us_or_international TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS source_url TEXT")
     print("Table 'applicants' ready.")
 
 def insert_data(conn, records):
@@ -94,11 +141,11 @@ def insert_data(conn, records):
             try:
                 cur.execute("""
                     INSERT INTO applicants (
-                        program, university, term, year, status, us_or_international, gpa, gre, gre_v, gre_aw,
-                        degree, llm_generated_program, llm_generated_university, source_url
+                        program, comments, date_added, acceptance_date, url, status, term, us_or_international, gpa, gre, gre_v, gre_aw,
+                        degree, llm_generated_program, llm_generated_university, university, year
                     ) VALUES (
-                        %(program)s, %(university)s, %(term)s, %(year)s, %(status)s, %(us_or_international)s, %(gpa)s, %(gre)s, %(gre_v)s, %(gre_aw)s,
-                        %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s, %(source_url)s
+                        %(program)s, %(comments)s, %(date_added)s, %(acceptance_date)s, %(url)s, %(status)s, %(term)s, %(us_or_international)s, %(gpa)s, %(gre)s, %(gre_v)s, %(gre_aw)s,
+                        %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s, %(university)s, %(year)s
                     )
                 """, r)
             except Exception as e:

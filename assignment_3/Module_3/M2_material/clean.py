@@ -15,18 +15,21 @@ def clean_data(raw_pages):
         text = soup.get_text("\n")
 
         decision_raw = _extract(r"Decision\s*(.*)", text)
+        status = _normalize_decision(decision_raw)
+        acceptance_date = _extract(r"Accepted on\s*(.*)", text)
+        term = _extract(r"\b(Fall|Spring|Summer|Winter)\b", text)
 
         record = {
             "program": _extract(r"Program\s*(.*)", text),
             "university": _extract(r"Institution\s*(.*)", text),
             "comments": _sanitize_text(_extract_notes(text)),  # sanitized
-            "date_added": _extract_date_added(text),
+            "date_added": page.get("date_added") or _extract_date_added(text),
             "url": page["url"],
-            "applicant_status": _normalize_decision(decision_raw),
-            "acceptance_date": _extract(r"Accepted on\s*(.*)", text),
+            "applicant_status": status,
+            "acceptance_date": acceptance_date,
             "rejection_date": _extract(r"Rejected on\s*(.*)", text),
             "degree_type": _extract_degree_type(text),
-            "start_term": _extract(r"\b(Fall|Spring|Summer|Winter)\b", text),
+            "start_term": _normalize_start_term(status, term, acceptance_date),
             "start_year": _extract(r"\b(20\d{2})\b", text),
             "citizenship": _extract(r"\b(International|American)\b", text),
             "gre_total": _none_if_zero(_extract(r"GRE General:\s*(\d{1,3})", text)),
@@ -58,10 +61,17 @@ def _extract(pattern, text, group=1):
 
 
 def _extract_date_added(text):
-    match = re.search(r"on\s+(\d{1,2}/\d{1,2}/\d{4})", text)
-    if not match:
-        return None
-    return match.group(1)
+    match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})", text)
+    if match:
+        value = match.group(1)
+        return None if value == "31/12/1969" else value
+    match = re.search(r"([A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})", text)
+    if match:
+        return match.group(1)
+    match = re.search(r"(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})", text)
+    if match:
+        return match.group(1)
+    return None
 
 
 def _extract_notes(text):
@@ -113,6 +123,12 @@ def _normalize_decision(value):
     if "wait" in value:
         return "waitlisted"
     return None
+
+
+def _normalize_start_term(status, term, acceptance_date):
+    if status != "accepted":
+        return None
+    return term
 
 
 def _sanitize_text(text):

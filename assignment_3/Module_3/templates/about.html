@@ -2,32 +2,53 @@
 {% block title %}About Me{% endblock %}
 
 {% block content %}
-<div class="about-text">
-    <h1>About Me</h1>
-    <p>
-      I’m a biomedical engineer with a deep love for exploring the outdoors, 
-      whether it’s hiking through local trails or taking on weekend adventures. 
-      I’m also a proud foster fail to my spirited dog, Mamba Wamba—yes, 
-      really—who keeps life lively and unpredictable. I enjoy constantly sharpening my math skills and 
-      discovering how to apply them to real-world problems, bridging theory with tangible solutions. 
-      Alongside this, I have a fascination with tinkering with microcontrollers and building gadgets or 
-      hardware from scratch, whether for work projects or personal hobbies, combining curiosity, creativity, 
-      and engineering in every project I tackle.
-    </p>
+<section class="about-hero">
+    <div class="about-card">
+        <h1>About Me</h1>
+        <p>
+          I’m a biomedical engineer with a deep love for exploring the outdoors, 
+          whether it’s hiking through local trails or taking on weekend adventures. 
+          I’m also a proud foster fail to my spirited dog, Mamba Wamba—yes, 
+          really—who keeps life lively and unpredictable. I enjoy constantly sharpening my math skills and 
+          discovering how to apply them to real-world problems, bridging theory with tangible solutions. 
+          Alongside this, I have a fascination with tinkering with microcontrollers and building gadgets or 
+          hardware from scratch, whether for work projects or personal hobbies, combining curiosity, creativity, 
+          and engineering in every project I tackle.
+        </p>
+        <div class="about-tags">
+            <span class="about-tag">Biomedical Engineering</span>
+            <span class="about-tag">Outdoors</span>
+            <span class="about-tag">Microcontrollers</span>
+            <span class="about-tag">Applied Math</span>
+        </div>
+    </div>
 
-    <!-- Contact section -->
-    <h3>Contact Me</h3>
-    <p>Email: Samuel.McKey@jhuapl.edu</p>
-    <p>LinkedIn: 
-        <a href="https://www.linkedin.com/in/samuel-mckey-846a071b6" target="_blank">View My LinkedIn</a>
-    </p>
-</div>
+    <aside class="about-contact">
+        <h3>Contact</h3>
+        <div class="contact-item">
+            <span class="contact-label">Email</span>
+            <span class="contact-value">Samuel.McKey@jhuapl.edu</span>
+        </div>
+        <div class="contact-item">
+            <span class="contact-label">LinkedIn</span>
+            <a class="contact-link" href="https://www.linkedin.com/in/samuel-mckey-846a071b6" target="_blank" rel="noopener">View My LinkedIn</a>
+        </div>
+        <div class="contact-note">I’m happy to connect about research, projects, or collaboration.</div>
+    </aside>
+</section>
 
-<!-- Dynamic grid gallery -->
-<div class="about-gallery-grid">
-    <img src="{{ url_for('static', filename='images/hiking.jpeg') }}" alt="Hiking">
-    <img src="{{ url_for('static', filename='images/micro.jpeg') }}" alt="Microcontroller">
-    <img src="{{ url_for('static', filename='images/math.jpeg') }}" alt="Math">
-    <img src="{{ url_for('static', filename='images/Mamba.jpg') }}" alt="Dog">
-</div>
+<section class="about-gallery">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">Snapshots</h2>
+            <p class="section-description">A quick look into my interests beyond coursework.</p>
+        </div>
+    </div>
+    <div class="about-gallery-grid">
+        <img src="{{ url_for('static', filename='images/hiking.jpeg') }}" alt="Hiking">
+        <img src="{{ url_for('static', filename='images/micro.jpeg') }}" alt="Microcontroller">
+        <img src="{{ url_for('static', filename='images/math.jpeg') }}" alt="Math">
+        <img src="{{ url_for('static', filename='images/Mamba.jpg') }}" alt="Dog">
+    </div>
+</section>
 {% endblock %}

@@ -16,6 +16,15 @@ def get_connection():
 # -----------------------------
 # 1. Count Fall 2026 entries
 # -----------------------------
+def count_total_applicants():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM applicants")
+            return cur.fetchone()[0]
+
+# -----------------------------
+# 2. Count Fall 2026 entries
+# -----------------------------
 def count_fall_2026_entries():
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -26,7 +35,7 @@ def count_fall_2026_entries():
             return cur.fetchone()[0]
 
 # -----------------------------
-# 2. Percent international students
+# 3. Percent international students
 # -----------------------------
 def percent_international_students():
     with get_connection() as conn:
@@ -43,7 +52,7 @@ def percent_international_students():
             return round((intl_count / total) * 100, 2) if total else 0.0
 
 # -----------------------------
-# 3. Average metrics (GPA, GRE, GRE V, GRE AW)
+# 4. Average metrics (GPA, GRE, GRE V, GRE AW)
 # -----------------------------
 def average_metrics_all_applicants():
     with get_connection() as conn:
@@ -69,7 +78,7 @@ def average_metrics_all_applicants():
             }
 
 # -----------------------------
-# 4. Average GPA of American Fall 2026 applicants
+# 5. Average GPA of American Fall 2026 applicants
 # -----------------------------
 def avg_gpa_american_fall_2026():
     with get_connection() as conn:
@@ -84,7 +93,7 @@ def avg_gpa_american_fall_2026():
             return float(result) if result else None
 
 # -----------------------------
-# 5. Acceptance rate Fall 2026
+# 6. Acceptance rate Fall 2026
 # -----------------------------
 def acceptance_rate_fall_2026():
     accept_pattern = "accept%"
@@ -105,7 +114,7 @@ def acceptance_rate_fall_2026():
             return round((acceptances / total) * 100, 2) if total else 0.0
 
 # -----------------------------
-# 6. Average GPA of Fall 2026 Acceptances
+# 7. Average GPA of Fall 2026 Acceptances
 # -----------------------------
 def avg_gpa_acceptances_fall_2026():
     accept_pattern = "accept%"
@@ -121,7 +130,7 @@ def avg_gpa_acceptances_fall_2026():
             return float(result) if result else None
 
 # -----------------------------
-# 7. Count JHU Masters in CS applicants
+# 8. Count JHU Masters in CS applicants
 # -----------------------------
 def count_jhu_masters_cs():
     masters_pattern = "%Master%"
@@ -137,7 +146,7 @@ def count_jhu_masters_cs():
             return cur.fetchone()[0]
 
 # -----------------------------
-# 8. Count Fall 2026 Acceptances for top PhD CS programs
+# 9. Count Fall 2026 Acceptances for top PhD CS programs
 #    using raw university names
 # -----------------------------
 def count_top_phd_acceptances_2026_raw_university():
@@ -158,7 +167,7 @@ def count_top_phd_acceptances_2026_raw_university():
             return cur.fetchone()[0]
 
 # -----------------------------
-# 9. Count Fall 2026 Acceptances for top PhD CS programs
+# 10. Count Fall 2026 Acceptances for top PhD CS programs
 #    using LLM-generated university names
 # -----------------------------
 def count_top_phd_acceptances_2026_llm():
@@ -179,7 +188,7 @@ def count_top_phd_acceptances_2026_llm():
             return cur.fetchone()[0]
 
 # -----------------------------
-# 9. Additional example queries
+# 11. Additional example queries
 # -----------------------------
 def additional_question_1():
     with get_connection() as conn:

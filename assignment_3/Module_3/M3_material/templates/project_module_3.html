@@ -3,9 +3,6 @@
 {% block title %}Module 3 Project{% endblock %}
 
 {% block content %}
-{% if pull_running %}
-<meta http-equiv="refresh" content="10">
-{% endif %}
 <div class="module3-page">
 <section class="module3-hero">
     <div class="module3-hero-text">
@@ -31,19 +28,55 @@
 <section class="module3-actions">
     <div class="action-card">
         <div>
+            <h2>LLM Status</h2>
+            {% if llm_ready %}
+            <p class="action-note">LLM server is ready. Pull Data will clean records before inserting them.</p>
+            {% else %}
+            <p class="action-note">LLM server is not ready yet. Start it and refresh this page.</p>
+            <p class="action-note">From `Module_3/llm_hosting`: run <code>python app.py --serve</code>.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="action-card pull-card">
+        <div class="pull-body">
             <h2>Pull New Data</h2>
-            <p>Fetches the latest GradCafe entries using the Module 2 scraper and inserts any new records into the database.</p>
-            {% if pull_running %}
+            <p>Fetches the latest GradCafe entries using the Module 2 scraper, cleans them with the LLM, and inserts any new records into the database.</p>
+            <p class="action-note">This pull targets up to {{ max_new_records }} new records (or stops at the latest GradCafe submission if fewer remain).</p>
+            {% if not llm_ready %}
+            <p class="action-note">LLM server is warming up. Pull Data will be enabled once it is ready.</p>
+            {% elif pull_running %}
             <p class="action-note">A pull is currently running. This button will be re-enabled when it finishes.</p>
             {% else %}
             <p class="action-note">When the pull finishes (or reaches the max new records), you can run it again.</p>
             {% endif %}
         </div>
-        <form action="{{ url_for('m3_pages.pull_data') }}" method="post">
-            <button class="action-button" type="submit" {% if pull_running %}disabled{% endif %}>
-                Pull Data
-            </button>
-        </form>
+        <div class="pull-meta">
+            <div class="pull-timer" id="pull-eta">
+                {% if pull_running %}
+                Estimating time remaining...
+                {% else %}
+                Ready to pull when the LLM is online.
+                {% endif %}
+            </div>
+            <form action="{{ url_for('m3_pages.pull_data') }}" method="post">
+                <button class="action-button" type="submit" {% if pull_running or not llm_ready %}disabled{% endif %}>
+                    Pull Data
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="action-card">
+        <div>
+            <h2>Analysis Report (PDF)</h2>
+            <p>Download the latest answers and query descriptions. This report updates when you click Update Analysis.</p>
+        </div>
+        {% if pull_running %}
+        <span class="action-button secondary disabled" aria-disabled="true">View PDF</span>
+        {% else %}
+        <a class="action-button secondary" href="{{ report_url }}" target="_blank" rel="noopener">
+            View PDF
+        </a>
+        {% endif %}
     </div>
 </section>
 
@@ -53,9 +86,57 @@
 </div>
 {% endif %}
 
+{% if pull_running %}
+<script>
+    const formatEta = (seconds) => {
+        if (!seconds || seconds < 0 || !Number.isFinite(seconds)) return "Estimating time remaining...";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        if (mins <= 0) return `~${secs}s remaining`;
+        return `~${mins}m ${secs}s remaining`;
+    };
+
+    const pollPullStatus = async () => {
+        try {
+            const res = await fetch("{{ url_for('m3_pages.pull_status') }}");
+            if (!res.ok) return;
+            const data = await res.json();
+            const etaEl = document.getElementById("pull-eta");
+            if (etaEl && data.progress) {
+                const progress = data.progress || {};
+                const inserted = Number(progress.inserted || 0);
+                const processed = Number(progress.processed || 0);
+                const target = Number(progress.target || 0);
+                const elapsed = Number(progress.elapsed_seconds || 0);
+                let etaSeconds = null;
+                if (inserted > 0 && processed > 0) {
+                    const insertsPerPage = inserted / processed;
+                    const remainingInserts = Math.max(target - inserted, 0);
+                    const estRemainingPages = insertsPerPage > 0 ? remainingInserts / insertsPerPage : null;
+                    const pagesPerSecond = processed / Math.max(elapsed, 1);
+                    etaSeconds = estRemainingPages && pagesPerSecond > 0 ? estRemainingPages / pagesPerSecond : null;
+                }
+                etaEl.textContent = formatEta(etaSeconds);
+            }
+            if (data.done && !data.running) {
+                window.location = "{{ url_for('m3_pages.module_3_project') }}";
+            }
+        } catch (err) {
+            // ignore transient errors
+        }
+    };
+    setInterval(pollPullStatus, 5000);
+</script>
+{% endif %}
+
 <section class="module3-section">
     <h2 class="section-title">Snapshot</h2>
     <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Applicants surveyed</div>
+            <div class="stat-value">{{ results.total_applicants }}</div>
+            <div class="stat-sub">Total entries in the database</div>
+        </div>
         <div class="stat-card">
             <div class="stat-label">Fall 2026 entries</div>
             <div class="stat-value">{{ results.fall_2026_count }}</div>
@@ -123,6 +204,10 @@
 
 <section class="module3-section">
     <h2 class="section-title">Top PhD CS Acceptances (2026)</h2>
+    <p class="section-description">
+        These counts include accepted applicants who applied to Georgetown University, MIT, Stanford University,
+        or Carnegie Mellon University for a PhD in Computer Science.
+    </p>
     <div class="compare-grid">
         <div class="stat-card">
             <div class="stat-label">Raw university names</div>
@@ -140,6 +225,10 @@
 
 <section class="module3-section">
     <h2 class="section-title">Additional Insights</h2>
+    <p class="section-description">
+        These optional queries explore extra patterns in the dataset, including citizenship breakdowns and GRE
+        performance for PhD Computer Science applicants in Fall 2026.
+    </p>
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-label">International count (Fall 2026)</div>
@@ -153,5 +242,6 @@
         </div>
     </div>
 </section>
+
 </div>
 {% endblock %}
