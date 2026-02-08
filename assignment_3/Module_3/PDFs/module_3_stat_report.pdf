@@ -1,0 +1,489 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 4 0 R 6 0 R 8 0 R 10 0 R 12 0 R ] /Count 5 >>
+endobj
+3 0 obj
+<< /Length 1830 >>
+stream
+BT
+/F1 10 Tf
+72 720 Td
+14 TL
+(Module 3 Analysis Report) Tj
+T*
+(Generated: 2026-02-08 14:30) Tj
+T*
+() Tj
+T*
+(Summary \(Fall 2026 Start Term + 2026 Acceptances\)) Tj
+T*
+(-------------------------------------------------) Tj
+T*
+(Applicants surveyed \(all time\): 50317) Tj
+T*
+(Fall 2026 entries: 7191) Tj
+T*
+(International share \(Fall 2026\): 40.65) Tj
+T*
+(Acceptance rate \(Fall 2026\): 26.56) Tj
+T*
+(JHU MS in CS applicants \(Fall 2026\): 1) Tj
+T*
+() Tj
+T*
+(Applicant Metrics \(Fall 2026/2026 Acceptances\)) Tj
+T*
+(----------------------------------------------) Tj
+T*
+(Average GPA: 3.74) Tj
+T*
+(Average GRE Quant: 271.75) Tj
+T*
+(Average GRE Verbal: 167.5) Tj
+T*
+(Average GRE Analytical Writing: 22.63) Tj
+T*
+(Average GPA \(American, Fall 2026\): 3.78) Tj
+T*
+(Average GPA \(Acceptances, Fall 2026\): 3.64) Tj
+T*
+() Tj
+T*
+(Top PhD CS Acceptances \(Fall 2026/2026 Acceptances\)) Tj
+T*
+(---------------------------------------------------) Tj
+T*
+(Raw university names: 2) Tj
+T*
+(LLM-generated names: 0) Tj
+T*
+() Tj
+T*
+(Additional Insights \(Fall 2026/2026 Acceptances\)) Tj
+T*
+(------------------------------------------------) Tj
+T*
+(Percent reporting GPA: 62.23%) Tj
+T*
+(Avg GRE \(International\): 280.44) Tj
+T*
+() Tj
+T*
+(Summary \(All Entries\)) Tj
+T*
+(---------------------) Tj
+T*
+(Total entries: 50317) Tj
+T*
+(International share \(all entries\): 44.41) Tj
+T*
+(Acceptance rate \(all entries\): 35.18) Tj
+T*
+(JHU MS in CS applicants \(all entries\): 6) Tj
+T*
+() Tj
+T*
+(Applicant Metrics \(All Entries\)) Tj
+T*
+(-------------------------------) Tj
+T*
+(Average GPA: 3.73) Tj
+T*
+(Average GRE Quant: 205.2) Tj
+T*
+(Average GRE Verbal: 160.42) Tj
+T*
+(Average GRE Analytical Writing: 8.48) Tj
+T*
+(Average GPA \(American\): 3.76) Tj
+T*
+(Average GPA \(Acceptances\): 3.72) Tj
+T*
+() Tj
+T*
+(Top PhD CS Acceptances \(All Entries\)) Tj
+T*
+ET
+
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 3 0 R /Resources << /Font << /F1 1 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 2637 >>
+stream
+BT
+/F1 10 Tf
+72 720 Td
+14 TL
+(------------------------------------) Tj
+T*
+(Raw university names: 34) Tj
+T*
+(LLM-generated names: 8) Tj
+T*
+() Tj
+T*
+(Additional Insights \(All Entries\)) Tj
+T*
+(---------------------------------) Tj
+T*
+(Percent reporting GPA: 55.54%) Tj
+T*
+(Avg GRE \(International\): 217.72) Tj
+T*
+() Tj
+T*
+(Query Descriptions) Tj
+T*
+(------------------) Tj
+T*
+() Tj
+T*
+(Applicants surveyed \(all entries\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants;) Tj
+T*
+(Why: Counts the total number of applicant entries used for the analysis.) Tj
+T*
+() Tj
+T*
+(Fall 2026 cohort \(start term + 2026 acceptances\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\);) Tj
+T*
+(Why: Counts Fall 2026 start-term applicants plus accepted applicants notified in 2026.) Tj
+T*
+() Tj
+T*
+(International share \(Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND us_or_international NOT IN \('American','Other'\); SELECT COUNT\(*\) FROM) Tj
+T*
+(applicants WHERE term ILIKE 'Fall 2026' OR \(status ILIKE 'accept%' AND) Tj
+T*
+(COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND '2026-12-31'\);) Tj
+T*
+(Why: Computes the share of international applicants in the Fall 2026/2026-acceptance) Tj
+T*
+(cohort.) Tj
+T*
+() Tj
+T*
+(Average metrics \(Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT AVG\(gpa\), AVG\(gre\), AVG\(gre_v\), AVG\(gre_aw\) FROM applicants WHERE \(term) Tj
+T*
+(ILIKE 'Fall 2026' OR \(status ILIKE 'accept%' AND COALESCE\(acceptance_date, date_added\)) Tj
+T*
+(BETWEEN '2026-01-01' AND '2026-12-31'\)\) AND \(gpa IS NOT NULL OR gre IS NOT NULL OR gre_v) Tj
+T*
+(IS NOT NULL OR gre_aw IS NOT NULL\);) Tj
+T*
+(Why: Calculates average GPA and GRE metrics for the Fall 2026/2026-acceptance cohort.) Tj
+T*
+() Tj
+T*
+(Average GPA \(American, Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT AVG\(gpa\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND us_or_international='American' AND gpa IS NOT NULL;) Tj
+T*
+(Why: Finds the average GPA for American applicants in the Fall 2026/2026-acceptance) Tj
+T*
+(cohort.) Tj
+T*
+() Tj
+T*
+(Acceptance rate \(Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+ET
+
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 1 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 3389 >>
+stream
+BT
+/F1 10 Tf
+72 720 Td
+14 TL
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND status ILIKE 'accept%'; SELECT COUNT\(*\) FROM applicants WHERE term) Tj
+T*
+(ILIKE 'Fall 2026' OR \(status ILIKE 'accept%' AND COALESCE\(acceptance_date, date_added\)) Tj
+T*
+(BETWEEN '2026-01-01' AND '2026-12-31'\);) Tj
+T*
+(Why: Divides accepted applicants by total applicants in the Fall 2026/2026-acceptance) Tj
+T*
+(cohort.) Tj
+T*
+() Tj
+T*
+(Average GPA \(Acceptances, Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT AVG\(gpa\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND status ILIKE 'accept%' AND gpa IS NOT NULL;) Tj
+T*
+(Why: Averages GPA among accepted applicants in the Fall 2026/2026-acceptance cohort.) Tj
+T*
+() Tj
+T*
+(JHU MS in CS applicants \(Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND llm_generated_university IN \('Johns Hopkins University','JHU'\) AND) Tj
+T*
+(degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%';) Tj
+T*
+(Why: Counts JHU master's in CS applicants in the Fall 2026/2026-acceptance cohort.) Tj
+T*
+() Tj
+T*
+(Top PhD CS acceptances \(raw university, 2026 cohort\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND status ILIKE 'accept%' AND degree ILIKE '%PhD%' AND) Tj
+T*
+(llm_generated_program ILIKE '%Computer Science%' AND program ILIKE ANY\(ARRAY['%Georgetown) Tj
+T*
+(University%','%MIT%','%Stanford University%','%Carnegie Mellon University%']\);) Tj
+T*
+(Why: Counts accepted PhD CS applicants in the Fall 2026/2026-acceptance cohort using raw) Tj
+T*
+(university names in program.) Tj
+T*
+() Tj
+T*
+(Top PhD CS acceptances \(LLM university, 2026 cohort\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND status ILIKE 'accept%' AND degree ILIKE '%PhD%' AND) Tj
+T*
+(llm_generated_program ILIKE '%Computer Science%' AND llm_generated_university IN) Tj
+T*
+(\('Georgetown University','MIT','Stanford University','Carnegie Mellon University'\);) Tj
+T*
+(Why: Counts accepted PhD CS applicants in the Fall 2026/2026-acceptance cohort using) Tj
+T*
+(LLM-normalized university names.) Tj
+T*
+() Tj
+T*
+(Additional Q1 \(Percent reporting GPA, Fall 2026 cohort\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND gpa IS NOT NULL; SELECT COUNT\(*\) FROM applicants WHERE term ILIKE 'Fall) Tj
+T*
+(2026' OR \(status ILIKE 'accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN) Tj
+T*
+('2026-01-01' AND '2026-12-31'\);) Tj
+T*
+(Why: Computes what percent of the Fall 2026/2026-acceptance cohort reported a GPA.) Tj
+T*
+() Tj
+T*
+(Additional Q2 \(Avg GRE, International, Fall 2026 cohort\)) Tj
+T*
+ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 1 0 R >> >> >>
+endobj
+9 0 obj
+<< /Length 2821 >>
+stream
+BT
+/F1 10 Tf
+72 720 Td
+14 TL
+(Query: SELECT AVG\(gre\) FROM applicants WHERE \(term ILIKE 'Fall 2026' OR \(status ILIKE) Tj
+T*
+('accept%' AND COALESCE\(acceptance_date, date_added\) BETWEEN '2026-01-01' AND) Tj
+T*
+('2026-12-31'\)\) AND us_or_international NOT IN \('American','Other'\) AND gre IS NOT NULL;) Tj
+T*
+(Why: Computes the average GRE Quant for international applicants in the Fall) Tj
+T*
+(2026/2026-acceptance cohort.) Tj
+T*
+() Tj
+T*
+(All entries: Total applicants) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants;) Tj
+T*
+(Why: Counts all applicants in the database.) Tj
+T*
+() Tj
+T*
+(All entries: International share) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE us_or_international NOT IN) Tj
+T*
+(\('American','Other'\); SELECT COUNT\(*\) FROM applicants;) Tj
+T*
+(Why: Computes international share across all records.) Tj
+T*
+() Tj
+T*
+(All entries: Acceptance rate \(Fall 2026\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE status ILIKE 'accept%'; SELECT COUNT\(*\) FROM) Tj
+T*
+(applicants;) Tj
+T*
+(Why: Acceptance rate across all records.) Tj
+T*
+() Tj
+T*
+(All entries: JHU MS in CS applicants) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE llm_generated_university IN \('Johns Hopkins) Tj
+T*
+(University','JHU'\) AND degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer) Tj
+T*
+(Science%';) Tj
+T*
+(Why: Counts applicants who applied to JHU for a master's in CS across all records.) Tj
+T*
+() Tj
+T*
+(All entries: Average metrics) Tj
+T*
+(Query: SELECT AVG\(gpa\), AVG\(gre\), AVG\(gre_v\), AVG\(gre_aw\) FROM applicants WHERE gpa IS) Tj
+T*
+(NOT NULL OR gre IS NOT NULL OR gre_v IS NOT NULL OR gre_aw IS NOT NULL;) Tj
+T*
+(Why: Average metrics across all records.) Tj
+T*
+() Tj
+T*
+(All entries: Top PhD CS acceptances \(raw university\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE status ILIKE 'accept%' AND degree ILIKE) Tj
+T*
+('%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND program ILIKE) Tj
+T*
+(ANY\(ARRAY['%Georgetown University%','%MIT%','%Stanford University%','%Carnegie Mellon) Tj
+T*
+(University%']\);) Tj
+T*
+(Why: Accepted PhD CS applicants across all records using raw university names in program.) Tj
+T*
+() Tj
+T*
+(All entries: Top PhD CS acceptances \(LLM university\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE status ILIKE 'accept%' AND degree ILIKE) Tj
+T*
+('%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND llm_generated_university) Tj
+T*
+(IN \('Georgetown University','MIT','Stanford University','Carnegie Mellon University'\);) Tj
+T*
+(Why: Accepted PhD CS applicants across all records using LLM university.) Tj
+T*
+() Tj
+T*
+(All entries: Additional Q1 \(Percent reporting GPA\)) Tj
+T*
+(Query: SELECT COUNT\(*\) FROM applicants WHERE gpa IS NOT NULL; SELECT COUNT\(*\) FROM) Tj
+T*
+(applicants;) Tj
+T*
+ET
+
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 9 0 R /Resources << /Font << /F1 1 0 R >> >> >>
+endobj
+11 0 obj
+<< /Length 381 >>
+stream
+BT
+/F1 10 Tf
+72 720 Td
+14 TL
+(Why: Percent of applicants with GPA across all records.) Tj
+T*
+() Tj
+T*
+(All entries: Additional Q2 \(Avg GRE, International\)) Tj
+T*
+(Query: SELECT AVG\(gre\) FROM applicants WHERE us_or_international NOT IN) Tj
+T*
+(\('American','Other'\) AND gre IS NOT NULL;) Tj
+T*
+(Why: Average GRE Quant for international applicants across all records.) Tj
+T*
+ET
+
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 11 0 R /Resources << /Font << /F1 1 0 R >> >> >>
+endobj
+13 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000164 00000 n 
+0000002046 00000 n 
+0000002172 00000 n 
+0000004861 00000 n 
+0000004987 00000 n 
+0000008428 00000 n 
+0000008554 00000 n 
+0000011427 00000 n 
+0000011554 00000 n 
+0000011987 00000 n 
+0000012115 00000 n 
+trailer
+<< /Size 14 /Root 13 0 R >>
+startxref
+12165
+%%EOF
