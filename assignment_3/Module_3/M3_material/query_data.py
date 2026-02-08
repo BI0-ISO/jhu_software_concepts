@@ -175,19 +175,32 @@ def avg_gpa_acceptances_fall_2026(use_term_filter: bool):
 # 8. Count JHU Masters in CS applicants
 # -----------------------------
 def count_jhu_masters_cs(use_term_filter: bool):
-    """Count JHU MS in CS applicants using LLM-normalized fields."""
+    """Count JHU MS in CS applicants using LLM + raw text edge cases."""
     masters_pattern = "%Master%"
     cs_pattern = "%Computer Science%"
+    # Cover common variants and misspellings in raw text.
+    uni_patterns = [
+        "%Johns Hopkins University%",
+        "%Johns Hopkins Univ%",
+        "%John Hopkins%",
+        "%Johns Hopkins%",
+        "%John Hopkins University%",
+        "%Johns Hopkins Univeristy%",
+        "%JHU%",
+    ]
     clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
                 WHERE {clause}
-                  AND llm_generated_university IN ('Johns Hopkins University', 'JHU')
                   AND degree ILIKE %s
                   AND llm_generated_program ILIKE %s
-            """, (*params, masters_pattern, cs_pattern))
+                  AND (
+                        llm_generated_university ILIKE ANY(%s)
+                     OR program ILIKE ANY(%s)
+                  )
+            """, (*params, masters_pattern, cs_pattern, uni_patterns, uni_patterns))
             return cur.fetchone()[0]
 
 # -----------------------------
@@ -262,3 +275,15 @@ def additional_question_2(use_term_filter: bool):
             """, params)
             result = cur.fetchone()[0]
             return float(result) if result else None
+
+
+def get_latest_db_id():
+    """Return the highest GradCafe result ID stored in the database."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT MAX(SUBSTRING(url FROM '/(\\d+)$')::int) "
+                "FROM applicants WHERE url ~ '/\\d+$'"
+            )
+            value = cur.fetchone()[0]
+            return int(value) if value is not None else None

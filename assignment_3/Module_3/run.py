@@ -16,6 +16,8 @@ import time
 import urllib.error
 import urllib.request
 
+from config import LLM_HOST, LLM_PORT
+
 from flask import Flask
 from M1_material.board import bp as m1_bp
 from M3_material.board import bp as m3_bp
@@ -42,9 +44,7 @@ def _is_port_open(host: str, port: int) -> bool:
 def _start_llm_server():
     """Start the local LLM service if it is not already running."""
     global LLM_PROCESS
-    host = os.getenv("LLM_HOST", "127.0.0.1")
-    port = int(os.getenv("LLM_PORT", "8000"))
-    if _is_port_open(host, port):
+    if _is_port_open(LLM_HOST, LLM_PORT):
         return
     base_dir = os.path.dirname(os.path.abspath(__file__))
     llm_dir = os.path.join(base_dir, "llm_hosting")
@@ -66,9 +66,7 @@ def _start_llm_server():
 
 def _wait_for_llm_ready(timeout_seconds: int = 180) -> bool:
     """Poll the LLM /ready endpoint until it reports healthy or we time out."""
-    host = os.getenv("LLM_HOST", "127.0.0.1")
-    port = int(os.getenv("LLM_PORT", "8000"))
-    url = f"http://{host}:{port}/ready"
+    url = f"http://{LLM_HOST}:{LLM_PORT}/ready"
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
         try:

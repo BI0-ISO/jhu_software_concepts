@@ -239,8 +239,8 @@ def generate_pdf_report(results, path):
         },
         {
             "title": "JHU MS in CS applicants (Fall 2026 cohort)",
-            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND llm_generated_university IN ('Johns Hopkins University','JHU') AND degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%';",
-            "why": "Counts JHU master's in CS applicants in the Fall 2026/2026-acceptance cohort."
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%' AND (llm_generated_university ILIKE ANY(ARRAY['%Johns Hopkins University%','%Johns Hopkins Univ%','%John Hopkins%','%Johns Hopkins%','%John Hopkins University%','%Johns Hopkins Univeristy%','%JHU%']) OR program ILIKE ANY(ARRAY['%Johns Hopkins University%','%Johns Hopkins Univ%','%John Hopkins%','%Johns Hopkins%','%John Hopkins University%','%Johns Hopkins Univeristy%','%JHU%']));",
+            "why": "Counts JHU master's in CS applicants in the Fall 2026/2026-acceptance cohort, including common name variants."
         },
         {
             "title": "Top PhD CS acceptances (raw university, 2026 cohort)",
@@ -280,8 +280,8 @@ def generate_pdf_report(results, path):
         },
         {
             "title": "All entries: JHU MS in CS applicants",
-            "query": "SELECT COUNT(*) FROM applicants WHERE llm_generated_university IN ('Johns Hopkins University','JHU') AND degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%';",
-            "why": "Counts applicants who applied to JHU for a master's in CS across all records."
+            "query": "SELECT COUNT(*) FROM applicants WHERE degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%' AND (llm_generated_university ILIKE ANY(ARRAY['%Johns Hopkins University%','%Johns Hopkins Univ%','%John Hopkins%','%Johns Hopkins%','%John Hopkins University%','%Johns Hopkins Univeristy%','%JHU%']) OR program ILIKE ANY(ARRAY['%Johns Hopkins University%','%Johns Hopkins Univ%','%John Hopkins%','%Johns Hopkins%','%John Hopkins University%','%Johns Hopkins Univeristy%','%JHU%']));",
+            "why": "Counts applicants who applied to JHU for a master's in CS across all records, including common name variants."
         },
         {
             "title": "All entries: Average metrics",

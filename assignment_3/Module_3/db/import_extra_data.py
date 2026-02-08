@@ -15,6 +15,7 @@ from datetime import datetime, date
 import psycopg
 
 from db_config import DB_CONFIG
+from migrate import migrate
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_PATH = os.path.join(BASE_DIR, "M3_material", "data", "extra_llm_applicant_data.json")
@@ -243,32 +244,7 @@ def normalize_record(r):
 
 def ensure_table(conn):
     """Create the applicants table if missing."""
-    with conn.cursor() as cur:
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS applicants (
-            p_id SERIAL PRIMARY KEY,
-            program TEXT,
-            comments TEXT,
-            date_added DATE,
-            acceptance_date DATE,
-            url TEXT,
-            status TEXT,
-            term TEXT,
-            us_or_international TEXT,
-            gpa FLOAT,
-            gre FLOAT,
-            gre_v FLOAT,
-            gre_aw FLOAT,
-            degree TEXT,
-            llm_generated_program TEXT,
-            llm_generated_university TEXT
-        )
-        """)
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS comments TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS date_added DATE")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS acceptance_date DATE")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS url TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS us_or_international TEXT")
+    migrate()
 
 
 def url_exists(conn, url):
@@ -347,7 +323,7 @@ def _recreate_table(conn):
     """Drop and recreate the applicants table."""
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS applicants")
-    ensure_table(conn)
+    migrate()
 
 
 def main(path=DEFAULT_PATH, recreate=False):

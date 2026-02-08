@@ -28,23 +28,29 @@ from clean import clean_data
 
 # -------- Paths and config --------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_DIR = os.path.join(BASE_DIR, "db")
-DATA_PATH = os.path.join(BASE_DIR, "M3_material", "data", "llm_extend_applicant_data.json")
+sys.path.append(BASE_DIR)
+
+from config import (
+    BASE_DIR as ROOT_DIR,
+    DB_DIR,
+    TARGET_NEW_RECORDS,
+    LLM_HOST_URL,
+    LLM_TIMEOUT,
+    LLM_BATCH_SIZE,
+    PULL_MAX_SECONDS,
+)
+
+DATA_PATH = os.path.join(ROOT_DIR, "M3_material", "data", "llm_extend_applicant_data.json")
 STATE_PATH = os.path.join(DB_DIR, "last_scraped_id.txt")
 LAST_ENTRIES_PATH = os.path.join(DB_DIR, "last_100_entries.json")
 DONE_PATH = os.path.join(DB_DIR, "pull_data.done")
 LATEST_SURVEY_PATH = os.path.join(DB_DIR, "latest_survey_id.txt")
 PROGRESS_PATH = os.path.join(DB_DIR, "pull_progress.json")
 
-sys.path.append(BASE_DIR)
 from db.db_config import DB_CONFIG
+from db.migrate import migrate
 
-TARGET_NEW_RECORDS = int(os.getenv("TARGET_NEW_RECORDS", "100"))
-LLM_HOST_URL = os.getenv("LLM_HOST_URL", "http://127.0.0.1:8000/standardize")
-LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "60"))
 USE_LLM = os.getenv("USE_LLM", "1") == "1"
-LLM_BATCH_SIZE = int(os.getenv("LLM_BATCH_SIZE", "8"))
-PULL_MAX_SECONDS = int(os.getenv("PULL_MAX_SECONDS", "600"))
 _LLM_AVAILABLE = None
 _LLM_WARNED = False
 
@@ -261,32 +267,7 @@ def normalize_record(r):
 
 def ensure_table(conn):
     """Ensure the applicants table exists with the expected schema."""
-    with conn.cursor() as cur:
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS applicants (
-            p_id SERIAL PRIMARY KEY,
-            program TEXT,
-            comments TEXT,
-            date_added DATE,
-            acceptance_date DATE,
-            url TEXT,
-            status TEXT,
-            term TEXT,
-            us_or_international TEXT,
-            gpa FLOAT,
-            gre FLOAT,
-            gre_v FLOAT,
-            gre_aw FLOAT,
-            degree TEXT,
-            llm_generated_program TEXT,
-            llm_generated_university TEXT
-        )
-        """)
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS comments TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS date_added DATE")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS acceptance_date DATE")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS url TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS us_or_international TEXT")
+    migrate()
 
 
 def insert_new_records(conn, records):
@@ -354,6 +335,44 @@ def _write_progress(status, inserted, duplicates, processed, target, started_at,
             json.dump(payload, f)
     except OSError:
         pass
+
+
+def _log_event(event: str, **fields) -> None:
+    """Emit a structured JSON log line (captured in pull_data.log)."""
+    payload = {"event": event, "ts": time.time(), **fields}
+    try:
+        print(json.dumps(payload))
+    except Exception:
+        print(f"[event:{event}] {fields}")
+
+
+def _init_pull_job(conn, target):
+    """Insert a pull job row and return its id."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO pull_jobs (status, target) VALUES (%s, %s) RETURNING id",
+            ("running", target),
+        )
+        return cur.fetchone()[0]
+
+
+def _update_pull_job(conn, job_id, status, inserted, duplicates, processed, last_attempted=None, error=None):
+    """Update pull job status/metrics in the database."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE pull_jobs
+               SET status = %s,
+                   updated_at = NOW(),
+                   inserted = %s,
+                   duplicates = %s,
+                   processed = %s,
+                   last_attempted = %s,
+                   error = %s
+             WHERE id = %s
+            """,
+            (status, inserted, duplicates, processed, last_attempted, error, job_id),
+        )
 
 
 def _standardize_with_llm_batch(rows: list[dict]) -> list[dict]:
@@ -430,6 +449,7 @@ def main():
     latest_id = None
     started_at = time.time()
     target_new = TARGET_NEW_RECORDS
+    job_id = None
     if lock_path:
         try:
             with open(lock_path, "w") as f:
@@ -469,7 +489,10 @@ def main():
 
         reached_target = False
 
+        job_id = _init_pull_job(conn, target_new)
+        _log_event("pull_started", target=target_new, start_id=last_id + 1, latest_id=latest_id)
         _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
+        _update_pull_job(conn, job_id, "running", inserted_total, duplicates_total, processed_total, last_attempted)
 
         any_pages = False
         batch = []
@@ -485,10 +508,14 @@ def main():
             processed_total += 1
             last_attempted = get_last_attempted_id()
             _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at, last_attempted)
+            if job_id:
+                _update_pull_job(conn, job_id, "running", inserted_total, duplicates_total, processed_total, last_attempted)
 
             if url_exists(conn, cleaned_row.get("url")):
                 duplicates_total += 1
                 _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
+                if job_id:
+                    _update_pull_job(conn, job_id, "running", inserted_total, duplicates_total, processed_total, last_attempted)
                 continue
 
             batch.append(cleaned_row)
@@ -513,9 +540,10 @@ def main():
             duplicates_total += duplicates
             batch = []
             _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
+            if job_id:
+                _update_pull_job(conn, job_id, "running", inserted_total, duplicates_total, processed_total, last_attempted)
 
         write_last_entries(conn, LAST_ENTRIES_PATH)
-        conn.close()
 
         if not any_pages:
             stop_reason = get_last_stop_reason()
@@ -535,6 +563,8 @@ def main():
             if last_attempted is not None:
                 _write_last_scraped_id(last_attempted)
             _write_progress(status, inserted_total, duplicates_total, processed_total, target_new, started_at)
+            if job_id:
+                _update_pull_job(conn, job_id, status, inserted_total, duplicates_total, processed_total, last_attempted)
             return
 
         last_attempted = get_last_attempted_id()
@@ -542,6 +572,7 @@ def main():
             _write_last_scraped_id(last_attempted)
 
         print(f"Inserted {inserted_total} new records, {duplicates_total} duplicates skipped. Last scraped id: {last_attempted}")
+        _log_event("pull_finished", status=status, inserted=inserted_total, duplicates=duplicates_total, last_attempted=last_attempted)
         stop_reason = get_last_stop_reason()
         if stop_reason == "placeholder_streak":
             if inserted_total == 0:
@@ -564,6 +595,7 @@ def main():
     except Exception as e:
         status = "error"
         print(f"Pull failed: {e}")
+        _log_event("pull_failed", error=str(e))
     finally:
         try:
             os.makedirs(DB_DIR, exist_ok=True)
@@ -577,6 +609,11 @@ def main():
         except OSError:
             pass
         _write_progress(status, inserted_total, duplicates_total, processed_total, target_new, started_at)
+        if conn is not None and job_id:
+            try:
+                _update_pull_job(conn, job_id, status, inserted_total, duplicates_total, processed_total, last_attempted, error=None if status != "error" else "error")
+            except Exception:
+                pass
         if lock_path and os.path.exists(lock_path):
             try:
                 os.remove(lock_path)

@@ -10,6 +10,7 @@ import re
 from datetime import datetime, date
 import psycopg
 from db_config import DB_CONFIG
+from migrate import migrate
 
 def load_records(path):
     """Load either JSON array or JSONL file into a list of dicts."""
@@ -145,33 +146,7 @@ def normalize_record(r):
 
 def create_table(conn):
     """Create the applicants table if it does not exist."""
-    with conn.cursor() as cur:
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS applicants (
-            p_id SERIAL PRIMARY KEY,
-            program TEXT,
-            comments TEXT,
-            date_added DATE,
-            acceptance_date DATE,
-            url TEXT,
-            status TEXT,
-            term TEXT,
-            us_or_international TEXT,
-            gpa FLOAT,
-            gre FLOAT,
-            gre_v FLOAT,
-            gre_aw FLOAT,
-            degree TEXT,
-            llm_generated_program TEXT,
-            llm_generated_university TEXT
-        )
-        """)
-        # Ensure required columns exist if table was created with an older schema
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS comments TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS date_added DATE")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS acceptance_date DATE")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS url TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS us_or_international TEXT")
+    migrate()
     print("Table 'applicants' ready.")
 
 def insert_data(conn, records):

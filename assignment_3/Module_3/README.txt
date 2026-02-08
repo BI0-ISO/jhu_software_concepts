@@ -69,6 +69,13 @@ The applicants table matches SCHEMA_OVERVIEW.md exactly:
 The schema is created automatically in pull_data.py and import_extra_data.py
 if it does not exist.
 
+Migrations
+----------
+Schema changes are now managed via db/migrate.py and db/migrations/*.sql.
+This ensures a single, explicit source of truth for the applicants table,
+indexes, and pull job tracking. The migration also adds a unique index on
+the URL field to prevent duplicate insertions.
+
 
 How Pull Data Works (Scrape -> Clean -> LLM -> Insert)
 -----------------------------------------------------
@@ -149,6 +156,14 @@ Pull Data Workflow
 3) Click "Update Analysis" to recompute the statistics and regenerate the PDF.
 
 If a pull gets stuck, use "Cancel Pull" to terminate it and retry.
+
+System Health Panel
+-------------------
+The dashboard includes a health section showing:
+- Latest DB ID (highest GradCafe result ID stored)
+- Latest Survey ID (most recent ID on GradCafe)
+- Analysis cache last-updated timestamp
+- Last pull job status and counts (stored in pull_jobs table)
 
 
 Environment Variables (Optional)

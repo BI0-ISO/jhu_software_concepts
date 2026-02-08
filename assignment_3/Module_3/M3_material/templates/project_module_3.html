@@ -195,6 +195,44 @@
 </script>
 
 <section class="module3-section">
+    <h2 class="section-title">System Health</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Latest DB ID</div>
+            <div class="stat-value">{{ latest_db_id if latest_db_id is not none else "N/A" }}</div>
+            <div class="stat-sub">Highest GradCafe result ID stored</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Latest Survey ID</div>
+            <div class="stat-value">{{ latest_survey_id if latest_survey_id is not none else "N/A" }}</div>
+            <div class="stat-sub">Most recent ID on GradCafe</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Analysis Updated</div>
+            <div class="stat-value">{{ analysis_updated_at if analysis_updated_at else "N/A" }}</div>
+            <div class="stat-sub">Last cache refresh</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Last Pull Status</div>
+            <div class="stat-value">
+                {% if last_pull_job %}
+                    {{ last_pull_job.status }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">
+                {% if last_pull_job %}
+                    Inserted {{ last_pull_job.inserted }} • Processed {{ last_pull_job.processed }}
+                {% else %}
+                    No pull history recorded
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
     <h2 class="section-title">Fall 2026 Entries (Start Term + 2026 Acceptances)</h2>
     <p class="section-description">
         These answers use applicants whose <strong>semester_year_start</strong> is <strong>Fall 2026</strong>

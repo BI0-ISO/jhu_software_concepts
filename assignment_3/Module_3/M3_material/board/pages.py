@@ -14,6 +14,7 @@ import time
 import json
 import urllib.request
 import urllib.error
+import psycopg
 from urllib.parse import urlsplit, urlunsplit
 from flask import render_template, redirect, url_for, request, jsonify
 from M3_material.reporting import generate_pdf_report
@@ -30,8 +31,12 @@ from M3_material.query_data import (
     count_top_phd_acceptances_2026_raw_university,
     count_top_phd_acceptances_2026_llm,
     additional_question_1,
-    additional_question_2
+    additional_question_2,
+    get_latest_db_id
 )
+
+from db.db_config import DB_CONFIG
+from config import TARGET_NEW_RECORDS, LLM_HOST, LLM_PORT
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 PULL_SCRIPT = os.path.join(BASE_DIR, "M2_material", "pull_data.py")
@@ -39,8 +44,9 @@ LOG_PATH = os.path.join(BASE_DIR, "db", "pull_data.log")
 LOCK_PATH = os.path.join(BASE_DIR, "db", "pull_data.lock")
 DONE_PATH = os.path.join(BASE_DIR, "db", "pull_data.done")
 PROGRESS_PATH = os.path.join(BASE_DIR, "db", "pull_progress.json")
+LATEST_SURVEY_PATH = os.path.join(BASE_DIR, "db", "latest_survey_id.txt")
 LOCK_STALE_SECONDS = 900
-MAX_NEW_RECORDS = int(os.getenv("TARGET_NEW_RECORDS", "100"))
+MAX_NEW_RECORDS = TARGET_NEW_RECORDS
 REPORT_PATH = os.path.join(BASE_DIR, "static", "reports", "module_3_report.pdf")
 ANALYSIS_CACHE_PATH = os.path.join(BASE_DIR, "db", "analysis_cache.json")
 
@@ -63,9 +69,7 @@ def _llm_status_url():
     if host_url:
         parts = urlsplit(host_url)
         return urlunsplit((parts.scheme, parts.netloc, "/status", "", ""))
-    host = os.getenv("LLM_HOST", "127.0.0.1")
-    port = os.getenv("LLM_PORT", "8000")
-    return f"http://{host}:{port}/status"
+    return f"http://{LLM_HOST}:{LLM_PORT}/status"
 
 
 def _is_llm_ready():
@@ -137,9 +141,9 @@ def _read_cached_results():
             data = json.load(f)
             if not isinstance(data, dict):
                 return None
-            if "year_2026" not in data or "all_time" not in data:
-                return None
-            return data
+            if "year_2026" in data and "all_time" in data:
+                return data
+            return None
     except (OSError, json.JSONDecodeError):
         return None
 
@@ -148,7 +152,48 @@ def _write_cached_results(results):
     """Persist analysis results to disk for fast page loads."""
     os.makedirs(os.path.dirname(ANALYSIS_CACHE_PATH), exist_ok=True)
     with open(ANALYSIS_CACHE_PATH, "w") as f:
-        json.dump(results, f, indent=2)
+        payload = dict(results)
+        payload["_meta"] = {"updated_at": time.time()}
+        json.dump(payload, f, indent=2)
+
+
+def _read_latest_survey_id():
+    """Read latest survey id from disk if available."""
+    if not os.path.exists(LATEST_SURVEY_PATH):
+        return None
+    try:
+        with open(LATEST_SURVEY_PATH, "r") as f:
+            value = f.read().strip()
+            return int(value) if value else None
+    except (OSError, ValueError):
+        return None
+
+
+def _read_last_pull_job():
+    """Return the most recent pull job status from the DB."""
+    try:
+        with psycopg.connect(**DB_CONFIG) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT status, inserted, processed, updated_at, error
+                    FROM pull_jobs
+                    ORDER BY updated_at DESC
+                    LIMIT 1
+                    """
+                )
+                row = cur.fetchone()
+                if not row:
+                    return None
+                return {
+                    "status": row[0],
+                    "inserted": row[1],
+                    "processed": row[2],
+                    "updated_at": row[3],
+                    "error": row[4],
+                }
+    except Exception:
+        return None
 
 
 def _is_pull_running():
@@ -351,6 +396,19 @@ def module_3_project():
             generate_pdf_report(results, REPORT_PATH)
         except Exception:
             pass
+    analysis_updated_at = None
+    meta = results.get("_meta") if isinstance(results, dict) else None
+    if meta and meta.get("updated_at"):
+        try:
+            analysis_updated_at = time.strftime(
+                "%Y-%m-%d %H:%M:%S",
+                time.localtime(float(meta.get("updated_at")))
+            )
+        except (TypeError, ValueError):
+            analysis_updated_at = None
+    latest_db_id = get_latest_db_id()
+    latest_survey_id = _read_latest_survey_id()
+    last_pull_job = _read_last_pull_job()
     return render_template(
         "project_module_3.html",
         results_2026=results.get("year_2026", {}),
@@ -361,6 +419,10 @@ def module_3_project():
         pull_progress=_read_progress(),
         status_message=message,
         max_new_records=MAX_NEW_RECORDS,
+        latest_db_id=latest_db_id,
+        latest_survey_id=latest_survey_id,
+        last_pull_job=last_pull_job,
+        analysis_updated_at=analysis_updated_at,
         report_url=url_for("static", filename="reports/module_3_report.pdf")
     )
 
