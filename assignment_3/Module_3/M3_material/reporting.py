@@ -1,8 +1,16 @@
+"""
+Generate a lightweight PDF report for Module 3 analytics.
+
+This file converts computed stats into a simple multi-page PDF without
+external dependencies. It is regenerated on "Update Analysis".
+"""
+
 import os
 from datetime import datetime
 
 
 def _sanitize(text):
+    """Keep ASCII-only text for simple PDF encoding."""
     if text is None:
         return ""
     # Keep ASCII only for simple PDF encoding
@@ -10,6 +18,7 @@ def _sanitize(text):
 
 
 def _wrap(text, width=90):
+    """Word-wrap a string into fixed-width lines."""
     text = _sanitize(text)
     if len(text) <= width:
         return [text]
@@ -31,10 +40,12 @@ def _wrap(text, width=90):
 
 
 def _escape_pdf(text):
+    """Escape PDF control characters."""
     return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
 def _write_simple_pdf(lines, path):
+    """Write a minimal PDF from a list of lines."""
     # Basic PDF with Helvetica, multi-page support
     page_width = 612
     page_height = 792
@@ -111,7 +122,10 @@ def _write_simple_pdf(lines, path):
 
 
 def generate_pdf_report(results, path):
+    """Render results into a PDF and write it to disk."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    year_results = results.get("year_2026", {})
+    all_results = results.get("all_time", {})
     lines = []
     lines.extend(_wrap("Module 3 Analysis Report"))
     lines.extend(_wrap(f"Generated: {now}"))
@@ -121,101 +135,178 @@ def generate_pdf_report(results, path):
         lines.append(title)
         lines.append("-" * len(title))
 
-    section("Snapshot")
+    section("Summary (Fall 2026 Start Term + 2026 Acceptances)")
     items = [
-        ("Applicants surveyed", results.get("total_applicants")),
-        ("Fall 2026 entries", results.get("fall_2026_count")),
-        ("International share (%)", results.get("percent_international")),
-        ("Acceptance rate Fall 2026 (%)", results.get("acceptance_rate_fall_2026")),
-        ("JHU MS in CS applicants", results.get("jhu_masters_cs")),
+        ("Applicants surveyed (all time)", results.get("total_applicants")),
+        ("Fall 2026 entries", year_results.get("fall_2026_count")),
+        ("International share (Fall 2026)", year_results.get("percent_international")),
+        ("Acceptance rate (Fall 2026)", year_results.get("acceptance_rate_fall_2026")),
+        ("JHU MS in CS applicants (Fall 2026)", year_results.get("jhu_masters_cs")),
     ]
     for label, value in items:
         lines.extend(_wrap(f"{label}: {value}"))
     lines.append("")
 
-    section("Applicant Metrics")
-    metrics = results.get("average_metrics") or {}
+    section("Applicant Metrics (Fall 2026/2026 Acceptances)")
+    metrics = year_results.get("average_metrics") or {}
     lines.extend(_wrap(f"Average GPA: {metrics.get('avg_gpa')}"))
     lines.extend(_wrap(f"Average GRE Quant: {metrics.get('avg_gre')}"))
     lines.extend(_wrap(f"Average GRE Verbal: {metrics.get('avg_gre_v')}"))
     lines.extend(_wrap(f"Average GRE Analytical Writing: {metrics.get('avg_gre_aw')}"))
-    lines.extend(_wrap(f"Average GPA (American, Fall 2026): {results.get('avg_gpa_american_fall_2026')}"))
-    lines.extend(_wrap(f"Average GPA (Acceptances, Fall 2026): {results.get('avg_gpa_acceptances_fall_2026')}"))
+    lines.extend(_wrap(f"Average GPA (American, Fall 2026): {year_results.get('avg_gpa_american_fall_2026')}"))
+    lines.extend(_wrap(f"Average GPA (Acceptances, Fall 2026): {year_results.get('avg_gpa_acceptances_fall_2026')}"))
     lines.append("")
 
-    section("Top PhD CS Acceptances (2026)")
-    lines.extend(_wrap(f"Raw university names: {results.get('top_phd_acceptances_2026_raw')}"))
-    lines.extend(_wrap(f"LLM-generated names: {results.get('top_phd_acceptances_2026_llm')}"))
+    section("Top PhD CS Acceptances (Fall 2026/2026 Acceptances)")
+    lines.extend(_wrap(f"Raw university names: {year_results.get('top_phd_acceptances_2026_raw')}"))
+    lines.extend(_wrap(f"LLM-generated names: {year_results.get('top_phd_acceptances_2026_llm')}"))
     lines.append("")
 
-    section("Additional Insights")
-    lines.extend(_wrap(f"International count (Fall 2026): {results.get('additional_question_1')}"))
-    lines.extend(_wrap(f"Avg GRE (PhD CS, Fall 2026): {results.get('additional_question_2')}"))
+    section("Additional Insights (Fall 2026/2026 Acceptances)")
+    lines.extend(_wrap(f"Percent reporting GPA: {year_results.get('additional_question_1')}%"))
+    lines.extend(_wrap(f"Avg GRE (International): {year_results.get('additional_question_2')}"))
+    lines.append("")
+
+    section("Summary (All Entries)")
+    items = [
+        ("Total entries", all_results.get("total_entries")),
+        ("International share (all entries)", all_results.get("percent_international")),
+        ("Acceptance rate (all entries)", all_results.get("acceptance_rate_fall_2026")),
+        ("JHU MS in CS applicants (all entries)", all_results.get("jhu_masters_cs")),
+    ]
+    for label, value in items:
+        lines.extend(_wrap(f"{label}: {value}"))
+    lines.append("")
+
+    section("Applicant Metrics (All Entries)")
+    metrics = all_results.get("average_metrics") or {}
+    lines.extend(_wrap(f"Average GPA: {metrics.get('avg_gpa')}"))
+    lines.extend(_wrap(f"Average GRE Quant: {metrics.get('avg_gre')}"))
+    lines.extend(_wrap(f"Average GRE Verbal: {metrics.get('avg_gre_v')}"))
+    lines.extend(_wrap(f"Average GRE Analytical Writing: {metrics.get('avg_gre_aw')}"))
+    lines.extend(_wrap(f"Average GPA (American): {all_results.get('avg_gpa_american_fall_2026')}"))
+    lines.extend(_wrap(f"Average GPA (Acceptances): {all_results.get('avg_gpa_acceptances_fall_2026')}"))
+    lines.append("")
+
+    section("Top PhD CS Acceptances (All Entries)")
+    lines.extend(_wrap(f"Raw university names: {all_results.get('top_phd_acceptances_2026_raw')}"))
+    lines.extend(_wrap(f"LLM-generated names: {all_results.get('top_phd_acceptances_2026_llm')}"))
+    lines.append("")
+
+    section("Additional Insights (All Entries)")
+    lines.extend(_wrap(f"Percent reporting GPA: {all_results.get('additional_question_1')}%"))
+    lines.extend(_wrap(f"Avg GRE (International): {all_results.get('additional_question_2')}"))
     lines.append("")
 
     section("Query Descriptions")
     queries = [
         {
-            "title": "Applicants surveyed",
+            "title": "Applicants surveyed (all entries)",
             "query": "SELECT COUNT(*) FROM applicants;",
             "why": "Counts the total number of applicant entries used for the analysis."
         },
         {
-            "title": "Fall 2026 entries",
-            "query": "SELECT COUNT(*) FROM applicants WHERE term = 'Fall' AND year = 2026;",
-            "why": "Counts all applications for the Fall 2026 term."
+            "title": "Fall 2026 cohort (start term + 2026 acceptances)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31');",
+            "why": "Counts Fall 2026 start-term applicants plus accepted applicants notified in 2026."
         },
         {
-            "title": "International share",
-            "query": "SELECT COUNT(*) FROM applicants WHERE us_or_international NOT IN ('American','Other'); "
-                     "SELECT COUNT(*) FROM applicants;",
-            "why": "Computes the share of international applicants by dividing international count by total."
+            "title": "International share (Fall 2026 cohort)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND us_or_international NOT IN ('American','Other'); "
+                     "SELECT COUNT(*) FROM applicants WHERE term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31');",
+            "why": "Computes the share of international applicants in the Fall 2026/2026-acceptance cohort."
         },
         {
-            "title": "Average metrics",
-            "query": "SELECT AVG(gpa), AVG(gre), AVG(gre_v), AVG(gre_aw) FROM applicants WHERE gpa IS NOT NULL OR gre IS NOT NULL OR gre_v IS NOT NULL OR gre_aw IS NOT NULL;",
-            "why": "Calculates average GPA and GRE metrics for applicants who reported them."
+            "title": "Average metrics (Fall 2026 cohort)",
+            "query": "SELECT AVG(gpa), AVG(gre), AVG(gre_v), AVG(gre_aw) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND (gpa IS NOT NULL OR gre IS NOT NULL OR gre_v IS NOT NULL OR gre_aw IS NOT NULL);",
+            "why": "Calculates average GPA and GRE metrics for the Fall 2026/2026-acceptance cohort."
         },
         {
-            "title": "Average GPA (American, Fall 2026)",
-            "query": "SELECT AVG(gpa) FROM applicants WHERE term='Fall' AND year=2026 AND us_or_international='American' AND gpa IS NOT NULL;",
-            "why": "Finds the average GPA for American applicants in Fall 2026."
+            "title": "Average GPA (American, Fall 2026 cohort)",
+            "query": "SELECT AVG(gpa) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND us_or_international='American' AND gpa IS NOT NULL;",
+            "why": "Finds the average GPA for American applicants in the Fall 2026/2026-acceptance cohort."
         },
         {
-            "title": "Acceptance rate (Fall 2026)",
-            "query": "SELECT COUNT(*) FROM applicants WHERE term='Fall' AND year=2026 AND status ILIKE 'accept%'; "
-                     "SELECT COUNT(*) FROM applicants WHERE term='Fall' AND year=2026;",
-            "why": "Divides the number of accepted applicants by total Fall 2026 applicants."
+            "title": "Acceptance rate (Fall 2026 cohort)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND status ILIKE 'accept%'; "
+                     "SELECT COUNT(*) FROM applicants WHERE term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31');",
+            "why": "Divides accepted applicants by total applicants in the Fall 2026/2026-acceptance cohort."
         },
         {
-            "title": "Average GPA (Acceptances, Fall 2026)",
-            "query": "SELECT AVG(gpa) FROM applicants WHERE term='Fall' AND year=2026 AND status ILIKE 'accept%' AND gpa IS NOT NULL;",
-            "why": "Averages GPA among accepted applicants for Fall 2026."
+            "title": "Average GPA (Acceptances, Fall 2026 cohort)",
+            "query": "SELECT AVG(gpa) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND status ILIKE 'accept%' AND gpa IS NOT NULL;",
+            "why": "Averages GPA among accepted applicants in the Fall 2026/2026-acceptance cohort."
         },
         {
-            "title": "JHU MS in CS applicants",
+            "title": "JHU MS in CS applicants (Fall 2026 cohort)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND llm_generated_university IN ('Johns Hopkins University','JHU') AND degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%';",
+            "why": "Counts JHU master's in CS applicants in the Fall 2026/2026-acceptance cohort."
+        },
+        {
+            "title": "Top PhD CS acceptances (raw university, 2026 cohort)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND status ILIKE 'accept%' AND degree ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND program ILIKE ANY(ARRAY['%Georgetown University%','%MIT%','%Stanford University%','%Carnegie Mellon University%']);",
+            "why": "Counts accepted PhD CS applicants in the Fall 2026/2026-acceptance cohort using raw university names in program."
+        },
+        {
+            "title": "Top PhD CS acceptances (LLM university, 2026 cohort)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND status ILIKE 'accept%' AND degree ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND llm_generated_university IN ('Georgetown University','MIT','Stanford University','Carnegie Mellon University');",
+            "why": "Counts accepted PhD CS applicants in the Fall 2026/2026-acceptance cohort using LLM-normalized university names."
+        },
+        {
+            "title": "Additional Q1 (Percent reporting GPA, Fall 2026 cohort)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND gpa IS NOT NULL; "
+                     "SELECT COUNT(*) FROM applicants WHERE term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31');",
+            "why": "Computes what percent of the Fall 2026/2026-acceptance cohort reported a GPA."
+        },
+        {
+            "title": "Additional Q2 (Avg GRE, International, Fall 2026 cohort)",
+            "query": "SELECT AVG(gre) FROM applicants WHERE (term ILIKE 'Fall 2026' OR (status ILIKE 'accept%' AND COALESCE(acceptance_date, date_added) BETWEEN '2026-01-01' AND '2026-12-31')) AND us_or_international NOT IN ('American','Other') AND gre IS NOT NULL;",
+            "why": "Computes the average GRE Quant for international applicants in the Fall 2026/2026-acceptance cohort."
+        },
+        {
+            "title": "All entries: Total applicants",
+            "query": "SELECT COUNT(*) FROM applicants;",
+            "why": "Counts all applicants in the database."
+        },
+        {
+            "title": "All entries: International share",
+            "query": "SELECT COUNT(*) FROM applicants WHERE us_or_international NOT IN ('American','Other'); SELECT COUNT(*) FROM applicants;",
+            "why": "Computes international share across all records."
+        },
+        {
+            "title": "All entries: Acceptance rate (Fall 2026)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE status ILIKE 'accept%'; SELECT COUNT(*) FROM applicants;",
+            "why": "Acceptance rate across all records."
+        },
+        {
+            "title": "All entries: JHU MS in CS applicants",
             "query": "SELECT COUNT(*) FROM applicants WHERE llm_generated_university IN ('Johns Hopkins University','JHU') AND degree ILIKE '%Master%' AND llm_generated_program ILIKE '%Computer Science%';",
-            "why": "Counts applicants who applied to JHU for a master's in CS using LLM-normalized fields."
+            "why": "Counts applicants who applied to JHU for a master's in CS across all records."
         },
         {
-            "title": "Top PhD CS acceptances (raw university)",
-            "query": "SELECT COUNT(*) FROM applicants WHERE year=2026 AND status ILIKE 'accept%' AND llm_generated_program ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND university IN ('Georgetown University','MIT','Stanford University','Carnegie Mellon University');",
-            "why": "Counts accepted PhD CS applicants to a set of top universities using the raw university field."
+            "title": "All entries: Average metrics",
+            "query": "SELECT AVG(gpa), AVG(gre), AVG(gre_v), AVG(gre_aw) FROM applicants WHERE gpa IS NOT NULL OR gre IS NOT NULL OR gre_v IS NOT NULL OR gre_aw IS NOT NULL;",
+            "why": "Average metrics across all records."
         },
         {
-            "title": "Top PhD CS acceptances (LLM university)",
-            "query": "SELECT COUNT(*) FROM applicants WHERE year=2026 AND status ILIKE 'accept%' AND llm_generated_program ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND llm_generated_university IN ('Georgetown University','MIT','Stanford University','Carnegie Mellon University');",
-            "why": "Same as above, but uses LLM-normalized university names to handle inconsistencies."
+            "title": "All entries: Top PhD CS acceptances (raw university)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE status ILIKE 'accept%' AND degree ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND program ILIKE ANY(ARRAY['%Georgetown University%','%MIT%','%Stanford University%','%Carnegie Mellon University%']);",
+            "why": "Accepted PhD CS applicants across all records using raw university names in program."
         },
         {
-            "title": "Additional Q1 (International count, Fall 2026)",
-            "query": "SELECT COUNT(*) FROM applicants WHERE term='Fall' AND year=2026 AND us_or_international NOT IN ('American','Other');",
-            "why": "Counts international applicants for Fall 2026."
+            "title": "All entries: Top PhD CS acceptances (LLM university)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE status ILIKE 'accept%' AND degree ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND llm_generated_university IN ('Georgetown University','MIT','Stanford University','Carnegie Mellon University');",
+            "why": "Accepted PhD CS applicants across all records using LLM university."
         },
         {
-            "title": "Additional Q2 (Avg GRE, PhD CS, Fall 2026)",
-            "query": "SELECT AVG(gre) FROM applicants WHERE term='Fall' AND year=2026 AND llm_generated_program ILIKE '%PhD%' AND llm_generated_program ILIKE '%Computer Science%' AND gre IS NOT NULL;",
-            "why": "Computes the average GRE Quant for Fall 2026 PhD CS applicants."
+            "title": "All entries: Additional Q1 (Percent reporting GPA)",
+            "query": "SELECT COUNT(*) FROM applicants WHERE gpa IS NOT NULL; SELECT COUNT(*) FROM applicants;",
+            "why": "Percent of applicants with GPA across all records."
+        },
+        {
+            "title": "All entries: Additional Q2 (Avg GRE, International)",
+            "query": "SELECT AVG(gre) FROM applicants WHERE us_or_international NOT IN ('American','Other') AND gre IS NOT NULL;",
+            "why": "Average GRE Quant for international applicants across all records."
         },
     ]
 

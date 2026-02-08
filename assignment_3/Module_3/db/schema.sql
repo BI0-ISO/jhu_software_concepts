@@ -1,3 +1,4 @@
+-- Applicants table schema aligned with SCHEMA_OVERVIEW.md
 CREATE TABLE IF NOT EXISTS applicants (
     p_id SERIAL PRIMARY KEY,
     program TEXT,
@@ -14,7 +15,5 @@ CREATE TABLE IF NOT EXISTS applicants (
     gre_aw FLOAT,
     degree TEXT,
     llm_generated_program TEXT,
-    llm_generated_university TEXT,
-    university TEXT,
-    year INTEGER
+    llm_generated_university TEXT
 );

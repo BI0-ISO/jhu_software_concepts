@@ -1,6 +1,7 @@
 /* =====================
    CSS Variables
    ===================== */
+/* Global styles for Module 3 site: layout, colors, cards, and pull UI. */
 :root {
     --hopkins-blue: #002D72;
     --hopkins-gold: #F2A900;
@@ -627,6 +628,12 @@ body {
     align-items: stretch;
 }
 
+.pull-actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
 .pull-timer {
     width: 100%;
     padding: 0.75rem 0.9rem;
@@ -661,6 +668,28 @@ body {
     margin-top: 0.5rem;
     color: #b45309;
     font-weight: 600;
+}
+
+.llm-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.llm-status-badge.ready {
+    background: rgba(16, 185, 129, 0.16);
+    color: #047857;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.llm-status-badge.warming {
+    background: rgba(245, 158, 11, 0.16);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
 .status-banner {

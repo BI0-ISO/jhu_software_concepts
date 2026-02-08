@@ -198,6 +198,7 @@ def _call_llm(program_text: str, original_uni: str | None = None) -> Dict[str, s
 
 # ---------------- Flask API ----------------
 def _normalize_input(payload: Any) -> List[Dict[str, Any]]:
+    """Normalize input payload into a list of row dicts."""
     if isinstance(payload, list):
         return payload
     if isinstance(payload, dict) and isinstance(payload.get("rows"), list):
@@ -206,19 +207,23 @@ def _normalize_input(payload: Any) -> List[Dict[str, Any]]:
 
 @app.get("/")
 def health() -> Any:
+    """Simple health check."""
     return jsonify({"ok": True})
 
 @app.get("/status")
 def status() -> Any:
+    """Return whether the model is loaded."""
     return jsonify({"ok": True, "model_loaded": _LLM is not None})
 
 @app.get("/ready")
 def ready() -> Any:
+    """Force model load and report readiness."""
     _load_llm()
     return jsonify({"ok": True, "model_loaded": True})
 
 @app.post("/standardize")
 def standardize() -> Any:
+    """Standardize program/university values for a batch of rows."""
     payload = request.get_json(force=True, silent=True)
     rows = _normalize_input(payload)
     out: List[Dict[str, Any]] = []
@@ -233,6 +238,7 @@ def standardize() -> Any:
 
 # ---------------- CLI ----------------
 def _cli_process_file(in_path: str, out_path: str | None, append: bool, to_stdout: bool) -> None:
+    """CLI helper to standardize a file of rows into JSONL output."""
     with open(in_path, "r", encoding="utf-8") as f:
         rows = _normalize_input(json.load(f))
 

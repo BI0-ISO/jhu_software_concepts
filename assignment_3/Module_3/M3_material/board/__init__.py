@@ -1,5 +1,7 @@
+"""Blueprint registration for Module 3 pages."""
+
 from flask import Blueprint
 
-# Point templates to M3_material/templates
-bp = Blueprint("m3_pages", __name__, template_folder="../templates")  # unique name for Module 3
+# Point templates to M3_material/templates and use a unique blueprint name.
+bp = Blueprint("m3_pages", __name__, template_folder="../templates")
 from M3_material.board import pages

@@ -1,11 +1,24 @@
-# M3_material/query_data.py
+"""
+SQL query helpers for Module 3 analytics.
+
+Each function opens a DB connection, runs a focused SQL query, and returns
+simple numeric results used by the dashboard and PDF report.
+"""
 from db.db_config import DB_CONFIG
 import psycopg
+
+# Cohort definition:
+# - Start term is Fall 2026, OR
+# - Accepted applicants notified in 2026 (acceptance_date/date_added).
+FALL_2026_TERM = "Fall 2026"
+FALL_2026_START_DATE = "2026-01-01"
+FALL_2026_END_DATE = "2026-12-31"
 
 # -----------------------------
 # Helper: Connect to DB
 # -----------------------------
 def get_connection():
+    """Open a DB connection or raise a helpful error."""
     try:
         # Psycopg3 allows connection as a context manager
         conn = psycopg.connect(**DB_CONFIG)
@@ -13,10 +26,21 @@ def get_connection():
     except Exception as e:
         raise RuntimeError(f"Error connecting to database: {e}") from e
 
+def _term_filter(use_term_filter: bool):
+    """Return SQL WHERE clause + params for the 2026 cohort or all entries."""
+    if use_term_filter:
+        # Include Fall 2026 start term entries OR accepted entries notified in 2026.
+        return (
+            "(term ILIKE %s OR (status ILIKE %s AND COALESCE(acceptance_date, date_added) BETWEEN %s AND %s))",
+            [FALL_2026_TERM, "accept%", FALL_2026_START_DATE, FALL_2026_END_DATE],
+        )
+    return "TRUE", []
+
 # -----------------------------
 # 1. Count Fall 2026 entries
 # -----------------------------
 def count_total_applicants():
+    """Total records in applicants table."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM applicants")
@@ -25,28 +49,32 @@ def count_total_applicants():
 # -----------------------------
 # 2. Count Fall 2026 entries
 # -----------------------------
-def count_fall_2026_entries():
+def count_fall_2026_entries(use_term_filter: bool):
+    """Count entries in the 2026 cohort (or all entries if filter disabled)."""
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE term = 'Fall' AND year = 2026
-            """)
+                WHERE {clause}
+            """, params)
             return cur.fetchone()[0]
 
 # -----------------------------
 # 3. Percent international students
 # -----------------------------
-def percent_international_students():
+def percent_international_students(use_term_filter: bool):
+    """Percent international (not American/Other) in the selected cohort."""
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE us_or_international NOT IN ('American', 'Other')
-            """)
+                WHERE {clause} AND us_or_international NOT IN ('American', 'Other')
+            """, params)
             intl_count = cur.fetchone()[0]
 
-            cur.execute("SELECT COUNT(*) FROM applicants")
+            cur.execute(f"SELECT COUNT(*) FROM applicants WHERE {clause}", params)
             total = cur.fetchone()[0]
 
             return round((intl_count / total) * 100, 2) if total else 0.0
@@ -54,21 +82,26 @@ def percent_international_students():
 # -----------------------------
 # 4. Average metrics (GPA, GRE, GRE V, GRE AW)
 # -----------------------------
-def average_metrics_all_applicants():
+def average_metrics_all_applicants(use_term_filter: bool):
+    """Average GPA/GRE metrics for the selected cohort."""
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     AVG(gpa)::numeric(5,2),
                     AVG(gre)::numeric(5,2),
                     AVG(gre_v)::numeric(5,2),
                     AVG(gre_aw)::numeric(5,2)
                 FROM applicants
-                WHERE gpa IS NOT NULL
+                WHERE {clause}
+                  AND (
+                      gpa IS NOT NULL
                    OR gre IS NOT NULL
                    OR gre_v IS NOT NULL
                    OR gre_aw IS NOT NULL
-            """)
+                  )
+            """, params)
             row = cur.fetchone()
             return {
                 "avg_gpa": float(row[0]) if row[0] else None,
@@ -80,35 +113,41 @@ def average_metrics_all_applicants():
 # -----------------------------
 # 5. Average GPA of American Fall 2026 applicants
 # -----------------------------
-def avg_gpa_american_fall_2026():
+def avg_gpa_american_fall_2026(use_term_filter: bool):
+    """Average GPA for American applicants in the selected cohort."""
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT AVG(gpa)::numeric(5,2)
                 FROM applicants
-                WHERE term='Fall' AND year=2026 AND us_or_international='American'
+                WHERE {clause}
+                  AND us_or_international='American'
                   AND gpa IS NOT NULL
-            """)
+            """, params)
             result = cur.fetchone()[0]
             return float(result) if result else None
 
 # -----------------------------
 # 6. Acceptance rate Fall 2026
 # -----------------------------
-def acceptance_rate_fall_2026():
+def acceptance_rate_fall_2026(use_term_filter: bool):
+    """Acceptance rate for the selected cohort."""
     accept_pattern = "accept%"
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE term='Fall' AND year=2026 AND status ILIKE %s
-            """, (accept_pattern,))
+                WHERE {clause}
+                  AND status ILIKE %s
+            """, (*params, accept_pattern))
             acceptances = cur.fetchone()[0]
 
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE term='Fall' AND year=2026
-            """)
+                WHERE {clause}
+            """, params)
             total = cur.fetchone()[0]
 
             return round((acceptances / total) * 100, 2) if total else 0.0
@@ -116,101 +155,110 @@ def acceptance_rate_fall_2026():
 # -----------------------------
 # 7. Average GPA of Fall 2026 Acceptances
 # -----------------------------
-def avg_gpa_acceptances_fall_2026():
+def avg_gpa_acceptances_fall_2026(use_term_filter: bool):
+    """Average GPA among accepted applicants in the selected cohort."""
     accept_pattern = "accept%"
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT AVG(gpa)::numeric(5,2)
                 FROM applicants
-                WHERE term='Fall' AND year=2026 AND status ILIKE %s
+                WHERE {clause}
+                  AND status ILIKE %s
                   AND gpa IS NOT NULL
-            """, (accept_pattern,))
+            """, (*params, accept_pattern))
             result = cur.fetchone()[0]
             return float(result) if result else None
 
 # -----------------------------
 # 8. Count JHU Masters in CS applicants
 # -----------------------------
-def count_jhu_masters_cs():
+def count_jhu_masters_cs(use_term_filter: bool):
+    """Count JHU MS in CS applicants using LLM-normalized fields."""
     masters_pattern = "%Master%"
     cs_pattern = "%Computer Science%"
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE llm_generated_university IN ('Johns Hopkins University', 'JHU')
+                WHERE {clause}
+                  AND llm_generated_university IN ('Johns Hopkins University', 'JHU')
                   AND degree ILIKE %s
                   AND llm_generated_program ILIKE %s
-            """, (masters_pattern, cs_pattern))
+            """, (*params, masters_pattern, cs_pattern))
             return cur.fetchone()[0]
 
 # -----------------------------
 # 9. Count Fall 2026 Acceptances for top PhD CS programs
 #    using raw university names
 # -----------------------------
-def count_top_phd_acceptances_2026_raw_university():
-    top_unis = ['Georgetown University', 'MIT', 'Stanford University', 'Carnegie Mellon University']
+def count_top_phd_acceptances_2026_raw_university(use_term_filter: bool):
+    """Count accepted PhD CS applicants by raw university names in program."""
+    top_unis = ['%Georgetown University%', '%MIT%', '%Stanford University%', '%Carnegie Mellon University%']
     accept_pattern = "accept%"
-    phd_pattern = "%PhD%"
     cs_pattern = "%Computer Science%"
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE year=2026
+                WHERE {clause}
                   AND status ILIKE %s
+                  AND degree ILIKE %s
                   AND llm_generated_program ILIKE %s
-                  AND llm_generated_program ILIKE %s
-                  AND university = ANY(%s)
-            """, (accept_pattern, phd_pattern, cs_pattern, top_unis))
+                  AND program ILIKE ANY(%s)
+            """, (*params, accept_pattern, "%PhD%", cs_pattern, top_unis))
             return cur.fetchone()[0]
 
 # -----------------------------
 # 10. Count Fall 2026 Acceptances for top PhD CS programs
 #    using LLM-generated university names
 # -----------------------------
-def count_top_phd_acceptances_2026_llm():
+def count_top_phd_acceptances_2026_llm(use_term_filter: bool):
+    """Count accepted PhD CS applicants using LLM-normalized universities."""
     top_unis = ['Georgetown University', 'MIT', 'Stanford University', 'Carnegie Mellon University']
     accept_pattern = "accept%"
-    phd_pattern = "%PhD%"
     cs_pattern = "%Computer Science%"
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT COUNT(*) FROM applicants
-                WHERE year=2026
+                WHERE {clause}
                   AND status ILIKE %s
-                  AND llm_generated_program ILIKE %s
+                  AND degree ILIKE %s
                   AND llm_generated_program ILIKE %s
                   AND llm_generated_university = ANY(%s)
-            """, (accept_pattern, phd_pattern, cs_pattern, top_unis))
+            """, (*params, accept_pattern, "%PhD%", cs_pattern, top_unis))
             return cur.fetchone()[0]
 
 # -----------------------------
 # 11. Additional example queries
 # -----------------------------
-def additional_question_1():
+def additional_question_1(use_term_filter: bool):
+    """Percent of applicants who reported a GPA."""
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT COUNT(*) FROM applicants
-                WHERE term='Fall' AND year=2026 AND us_or_international NOT IN ('American','Other')
-            """)
-            return cur.fetchone()[0]
+            cur.execute(f"SELECT COUNT(*) FROM applicants WHERE {clause}", params)
+            total = cur.fetchone()[0]
+            cur.execute(f"SELECT COUNT(*) FROM applicants WHERE {clause} AND gpa IS NOT NULL", params)
+            with_gpa = cur.fetchone()[0]
+            return round((with_gpa / total) * 100, 2) if total else 0.0
 
-def additional_question_2():
-    phd_pattern = "%PhD%"
-    cs_pattern = "%Computer Science%"
+def additional_question_2(use_term_filter: bool):
+    """Average GRE Quant for international applicants."""
+    clause, params = _term_filter(use_term_filter)
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(f"""
                 SELECT AVG(gre)::numeric(5,2)
                 FROM applicants
-                WHERE term='Fall' AND year=2026
-                  AND llm_generated_program ILIKE %s
-                  AND llm_generated_program ILIKE %s
+                WHERE {clause}
+                  AND us_or_international NOT IN ('American','Other')
                   AND gre IS NOT NULL
-            """, (phd_pattern, cs_pattern))
+            """, params)
             result = cur.fetchone()[0]
             return float(result) if result else None

@@ -1,3 +1,10 @@
+"""
+Backfill acceptance_date and term for existing records.
+
+This script updates rows using a local data file and a "spring -> fall" rule
+when term is missing.
+"""
+
 import json
 import os
 from datetime import datetime, date
@@ -12,6 +19,7 @@ LAST_ENTRIES_PATH = os.path.join(BASE_DIR, "db", "last_100_entries.json")
 
 
 def load_records(path):
+    """Load JSON array or JSONL records."""
     with open(path, "r") as f:
         first = ""
         while True:
@@ -36,6 +44,7 @@ def load_records(path):
 
 
 def to_date(value):
+    """Normalize dates into YYYY-MM-DD strings."""
     if not value:
         return None
     if isinstance(value, datetime):
@@ -65,14 +74,24 @@ def to_date(value):
 
 
 def normalize_term(status, start_term):
-    if status != "accepted":
-        return None
+    """Normalize the term string to Title Case."""
     if not start_term:
         return None
     return str(start_term).strip().title()
 
 
+def to_int(value):
+    """Safe int conversion."""
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def write_last_entries(conn, path, limit=100):
+    """Write latest N entries to disk for inspection."""
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM applicants ORDER BY p_id DESC LIMIT %s", (limit,))
         rows = cur.fetchall()
@@ -84,6 +103,7 @@ def write_last_entries(conn, path, limit=100):
 
 
 def main():
+    """Run the backfill against the applicants table."""
     if not os.path.exists(DATA_PATH):
         raise FileNotFoundError(f"Missing data file: {DATA_PATH}")
 
@@ -101,10 +121,28 @@ def main():
             acceptance_date = to_date(r.get("acceptance_date"))
             term = normalize_term(r.get("applicant_status"), r.get("start_term"))
             cur.execute(
-                "UPDATE applicants SET acceptance_date = %s, term = %s WHERE url = %s",
+                "UPDATE applicants SET acceptance_date = COALESCE(acceptance_date, %s), term = COALESCE(term, %s) WHERE url = %s",
                 (acceptance_date, term, url),
             )
             updated += cur.rowcount
+
+        # Fill missing term from date_added using the spring->fall rule
+        cur.execute("""
+            UPDATE applicants
+            SET term = COALESCE(
+                    term,
+                    CASE
+                        WHEN date_added IS NOT NULL
+                         AND EXTRACT(MONTH FROM date_added) BETWEEN 1 AND 5
+                        THEN 'Fall ' || EXTRACT(YEAR FROM date_added)::int
+                        WHEN status ILIKE 'accept%'
+                         AND date_added IS NOT NULL
+                        THEN 'Fall ' || EXTRACT(YEAR FROM date_added)::int
+                        ELSE term
+                    END
+                )
+            WHERE term IS NULL
+        """)
 
     write_last_entries(conn, LAST_ENTRIES_PATH)
     conn.close()

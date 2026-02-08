@@ -1,10 +1,16 @@
-# scrape.py
+"""
+GradCafe scraper.
+
+Iterates over sequential result IDs, fetches HTML pages, filters placeholder
+entries, and yields minimal raw records (HTML + URL + date_added).
+"""
 import urllib3
 from bs4 import BeautifulSoup
 import re
 import time
 from typing import Optional
 
+# Shared HTTP client with a basic User-Agent to reduce blocking.
 http = urllib3.PoolManager(
     headers={"User-Agent": "Mozilla/5.0"}
 )
@@ -22,6 +28,7 @@ def get_last_attempted_id():
 
 
 def _fetch_survey_added_map() -> dict[int, str]:
+    """Scrape the GradCafe survey page for "Added On" dates by result ID."""
     try:
         url = "https://www.thegradcafe.com/survey/"
         response = http.request("GET", url, timeout=urllib3.Timeout(5.0))
@@ -80,20 +87,31 @@ def get_latest_survey_id() -> Optional[int]:
         return None
 
 
-def scrape_data(start_entry: int, end_entry: Optional[int] = None, stop_on_placeholder_streak: bool = True, placeholder_limit: int = 10):
+def scrape_data(
+    start_entry: int,
+    end_entry: Optional[int] = None,
+    stop_on_placeholder_streak: bool = True,
+    placeholder_limit: int = 10,
+    max_failures: int = 50,
+    max_seconds: Optional[int] = None,
+):
     """
-    Generator function to scrape GradCafe entries one by one.
-
-    Yields:
-        dict: {"url": <url>, "html": <html content>}
+    Generator that yields cleaned scrape payloads:
+    {"url": <url>, "html": <html content>, "date_added": <added on>}
     """
     global LAST_STOP_REASON, LAST_ATTEMPTED_ID
     LAST_STOP_REASON = None
     LAST_ATTEMPTED_ID = None
     placeholder_streak = 0
+    failure_streak = 0
+    # Pull Added On dates once per run to avoid excessive requests.
     survey_added_map = _fetch_survey_added_map()
     entry_id = start_entry
+    start_time = time.time()
     while True:
+        if max_seconds is not None and time.time() - start_time > max_seconds:
+            LAST_STOP_REASON = "timeout"
+            break
         if end_entry is not None and entry_id >= end_entry:
             break
         LAST_ATTEMPTED_ID = entry_id
@@ -102,8 +120,13 @@ def scrape_data(start_entry: int, end_entry: Optional[int] = None, stop_on_place
         try:
             response = http.request("GET", url, timeout=urllib3.Timeout(5.0))
             if response.status != 200:
+                failure_streak += 1
+                if failure_streak >= max_failures:
+                    LAST_STOP_REASON = "error_streak"
+                    break
                 continue
 
+            failure_streak = 0
             html = response.data.decode("utf-8", errors="ignore")
             soup = BeautifulSoup(html, "html.parser")
             text = soup.get_text("\n")
@@ -119,9 +142,10 @@ def scrape_data(start_entry: int, end_entry: Optional[int] = None, stop_on_place
             else:
                 placeholder_streak = 0
 
+            # Map the Added On date from the survey listing if available.
             added_on = survey_added_map.get(entry_id)
 
-            # Yield valid page immediately
+            # Yield valid page immediately to the cleaner.
             yield {"url": url, "html": html, "date_added": added_on}
 
             # Live terminal update for attempted entries (optional)
@@ -131,7 +155,12 @@ def scrape_data(start_entry: int, end_entry: Optional[int] = None, stop_on_place
             # time.sleep(0.2)
 
         except Exception as e:
+            failure_streak += 1
             print(f"Error scraping {url}: {e}")
+            if failure_streak >= max_failures:
+                LAST_STOP_REASON = "error_streak"
+                break
+            time.sleep(0.2)
             continue
         finally:
             entry_id += 1

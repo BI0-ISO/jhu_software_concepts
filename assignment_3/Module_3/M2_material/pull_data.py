@@ -1,8 +1,21 @@
+"""
+Pull pipeline for Module 3.
+
+Flow:
+1) Determine the latest ID already stored in the database.
+2) Scrape GradCafe starting after that ID, up to the latest survey ID.
+3) Clean raw HTML into structured records.
+4) Standardize program/university with the local LLM.
+5) Normalize fields and insert into Postgres.
+6) Write progress to JSON for the UI and finalize status.
+"""
+
 import os
 import sys
 import json
 import time
 import argparse
+import re
 from datetime import datetime, date
 from typing import Optional
 import urllib.request
@@ -13,6 +26,7 @@ import psycopg
 from scrape import scrape_data, get_last_stop_reason, get_last_attempted_id, get_latest_survey_id
 from clean import clean_data
 
+# -------- Paths and config --------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DB_DIR = os.path.join(BASE_DIR, "db")
 DATA_PATH = os.path.join(BASE_DIR, "M3_material", "data", "llm_extend_applicant_data.json")
@@ -25,15 +39,18 @@ PROGRESS_PATH = os.path.join(DB_DIR, "pull_progress.json")
 sys.path.append(BASE_DIR)
 from db.db_config import DB_CONFIG
 
-TARGET_NEW_RECORDS = 25
+TARGET_NEW_RECORDS = int(os.getenv("TARGET_NEW_RECORDS", "100"))
 LLM_HOST_URL = os.getenv("LLM_HOST_URL", "http://127.0.0.1:8000/standardize")
-LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "120"))
+LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "60"))
 USE_LLM = os.getenv("USE_LLM", "1") == "1"
+LLM_BATCH_SIZE = int(os.getenv("LLM_BATCH_SIZE", "8"))
+PULL_MAX_SECONDS = int(os.getenv("PULL_MAX_SECONDS", "600"))
 _LLM_AVAILABLE = None
 _LLM_WARNED = False
 
 
 def _extract_entry_id(url: Optional[str]) -> Optional[int]:
+    """Parse the numeric result ID from a GradCafe URL."""
     if not url:
         return None
     try:
@@ -43,6 +60,7 @@ def _extract_entry_id(url: Optional[str]) -> Optional[int]:
 
 
 def _read_last_scraped_id() -> Optional[int]:
+    """Read the last attempted ID from disk (legacy fallback)."""
     if os.path.exists(STATE_PATH):
         try:
             with open(STATE_PATH, "r") as f:
@@ -54,12 +72,14 @@ def _read_last_scraped_id() -> Optional[int]:
 
 
 def _write_last_scraped_id(value: int) -> None:
+    """Persist the last attempted ID to disk."""
     os.makedirs(DB_DIR, exist_ok=True)
     with open(STATE_PATH, "w") as f:
         f.write(str(value))
 
 
 def _infer_last_id_from_file() -> Optional[int]:
+    """Fallback: infer max ID from the local JSONL file."""
     if not os.path.exists(DATA_PATH):
         return None
 
@@ -83,6 +103,21 @@ def _infer_last_id_from_file() -> Optional[int]:
     return max_id
 
 
+def _get_max_entry_id_from_db(conn) -> Optional[int]:
+    """Primary source of truth: max result ID already in the database."""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT MAX(SUBSTRING(url FROM '/(\\d+)$')::int)
+                FROM applicants
+                WHERE url ~ '/\\d+$'
+            """)
+            value = cur.fetchone()[0]
+            return int(value) if value is not None else None
+    except Exception:
+        return None
+
+
 def _to_int(value):
     if value in (None, ""):
         return None
@@ -92,16 +127,37 @@ def _to_int(value):
         return None
 
 
-def _to_float(value):
+def _extract_number(value):
+    """Extract the first numeric token from a string."""
     if value in (None, ""):
         return None
-    try:
-        return float(value)
-    except (TypeError, ValueError):
+    text = str(value)
+    matches = re.findall(r"\d+(?:\.\d+)?", text)
+    if not matches:
         return None
+    try:
+        return float(matches[0])
+    except ValueError:
+        return None
+
+
+def _to_numeric(value):
+    """Convert values like '165Q' into a float (or None)."""
+    return _extract_number(value)
+
+
+def _to_gpa(value):
+    """Return GPA only if it is between 0 and 4.0."""
+    num = _extract_number(value)
+    if num is None:
+        return None
+    if 0 <= num <= 4.0:
+        return num
+    return None
 
 
 def _to_date(value):
+    """Normalize dates into YYYY-MM-DD strings."""
     if not value:
         return None
     if isinstance(value, datetime):
@@ -142,35 +198,69 @@ def _normalize_term(value: Optional[str]) -> Optional[str]:
     return value.strip().title()
 
 
+def _combine_term_year(term: Optional[str], year: Optional[int]) -> Optional[str]:
+    if term and year:
+        return f"{term} {year}"
+    return term
+
+
+def _parse_decision_date(value: Optional[str], fallback_year: Optional[int]) -> Optional[str]:
+    """Parse a short decision date (e.g., '30 Jan') using a fallback year."""
+    if not value or not fallback_year:
+        return None
+    text = str(value).strip()
+    text = re.sub(r"(?i)^(accepted|rejected|wait\\s*listed|waitlisted)\\s+on\\s+", "", text).strip()
+    for fmt in ("%d %b", "%d %B", "%b %d", "%B %d"):
+        try:
+            dt = datetime.strptime(text, fmt)
+            return f"{fallback_year}-{dt.month:02d}-{dt.day:02d}"
+        except ValueError:
+            continue
+    return None
+
+
 def normalize_record(r):
+    """Normalize cleaned fields into the DB-ready schema."""
     program = r.get("program")
     university = r.get("university")
     llm_prog = r.get("llm_generated_program") or r.get("llm-generated-program")
     llm_uni = r.get("llm_generated_university") or r.get("llm-generated-university")
     status = r.get("applicant_status")
-    term = _normalize_term(r.get("start_term")) if status == "accepted" else None
+    term = _normalize_term(r.get("start_term"))
+    year = _to_int(r.get("start_year"))
+    term_year = _combine_term_year(term, year)
+    acceptance_date = _to_date(r.get("acceptance_date"))
+    if not acceptance_date and status == "accepted":
+        fallback_year = year
+        if fallback_year is None:
+            date_added_iso = _to_date(r.get("date_added"))
+            if date_added_iso:
+                try:
+                    fallback_year = int(date_added_iso[:4])
+                except ValueError:
+                    fallback_year = None
+        acceptance_date = _parse_decision_date(r.get("decision_date") or r.get("acceptance_date"), fallback_year)
     return {
-        "program": _combine_program_university(program, university),
+        "program": _combine_program_university(program, university) or _combine_program_university(llm_prog, llm_uni),
         "comments": r.get("comments"),
         "date_added": _to_date(r.get("date_added")),
-        "acceptance_date": _to_date(r.get("acceptance_date")),
+        "acceptance_date": acceptance_date,
         "url": r.get("url"),
-        "university": university,
-        "term": term,
-        "year": _to_int(r.get("start_year")),
+        "term": term_year,
         "status": status,
         "us_or_international": r.get("citizenship"),
         "degree": r.get("degree_type"),
-        "gpa": _to_float(r.get("gpa")),
-        "gre": _to_float(r.get("gre_total")),
-        "gre_v": _to_float(r.get("gre_verbal")),
-        "gre_aw": _to_float(r.get("gre_aw")),
+        "gpa": _to_gpa(r.get("gpa")),
+        "gre": _to_numeric(r.get("gre_total")),
+        "gre_v": _to_numeric(r.get("gre_verbal") or r.get("gre_v")),
+        "gre_aw": _to_numeric(r.get("gre_aw")),
         "llm_generated_program": llm_prog or program,
         "llm_generated_university": llm_uni or university,
     }
 
 
 def ensure_table(conn):
+    """Ensure the applicants table exists with the expected schema."""
     with conn.cursor() as cur:
         cur.execute("""
         CREATE TABLE IF NOT EXISTS applicants (
@@ -189,21 +279,18 @@ def ensure_table(conn):
             gre_aw FLOAT,
             degree TEXT,
             llm_generated_program TEXT,
-            llm_generated_university TEXT,
-            university TEXT,
-            year INTEGER
+            llm_generated_university TEXT
         )
         """)
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS comments TEXT")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS date_added DATE")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS acceptance_date DATE")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS url TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS university TEXT")
-        cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS year INTEGER")
         cur.execute("ALTER TABLE applicants ADD COLUMN IF NOT EXISTS us_or_international TEXT")
 
 
 def insert_new_records(conn, records):
+    """Insert new records into the DB, skipping duplicates by URL."""
     inserted = 0
     duplicates = 0
     with conn.cursor() as cur:
@@ -217,17 +304,27 @@ def insert_new_records(conn, records):
             cur.execute("""
                 INSERT INTO applicants (
                     program, comments, date_added, acceptance_date, url, status, term, us_or_international, gpa, gre, gre_v, gre_aw,
-                    degree, llm_generated_program, llm_generated_university, university, year
+                    degree, llm_generated_program, llm_generated_university
                 ) VALUES (
                     %(program)s, %(comments)s, %(date_added)s, %(acceptance_date)s, %(url)s, %(status)s, %(term)s, %(us_or_international)s, %(gpa)s, %(gre)s, %(gre_v)s, %(gre_aw)s,
-                    %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s, %(university)s, %(year)s
+                    %(degree)s, %(llm_generated_program)s, %(llm_generated_university)s
                 )
             """, r)
             inserted += 1
     return inserted, duplicates
 
 
+def url_exists(conn, url):
+    """Return True if the given URL already exists in the DB."""
+    if not url:
+        return False
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM applicants WHERE url = %s", (url,))
+        return cur.fetchone() is not None
+
+
 def write_last_entries(conn, path, limit=100):
+    """Write the newest N entries to disk for debugging."""
     with conn.cursor() as cur:
         cur.execute("SELECT * FROM applicants ORDER BY p_id DESC LIMIT %s", (limit,))
         rows = cur.fetchall()
@@ -238,7 +335,8 @@ def write_last_entries(conn, path, limit=100):
         json.dump(entries, f, indent=2, default=str)
 
 
-def _write_progress(status, inserted, duplicates, processed, target, started_at):
+def _write_progress(status, inserted, duplicates, processed, target, started_at, last_attempted=None):
+    """Write progress for UI polling and ETA estimates."""
     try:
         os.makedirs(DB_DIR, exist_ok=True)
         payload = {
@@ -250,6 +348,7 @@ def _write_progress(status, inserted, duplicates, processed, target, started_at)
             "started_at": started_at,
             "updated_at": time.time(),
             "elapsed_seconds": int(time.time() - started_at),
+            "last_attempted": last_attempted,
         }
         with open(PROGRESS_PATH, "w") as f:
             json.dump(payload, f)
@@ -257,7 +356,8 @@ def _write_progress(status, inserted, duplicates, processed, target, started_at)
         pass
 
 
-def _standardize_with_llm(row: dict) -> dict:
+def _standardize_with_llm_batch(rows: list[dict]) -> list[dict]:
+    """Call the local LLM service to standardize program/university names."""
     global _LLM_AVAILABLE, _LLM_WARNED
     if not USE_LLM:
         raise RuntimeError("LLM standardization is required. Set USE_LLM=1 and start the LLM server.")
@@ -287,6 +387,7 @@ def _standardize_with_llm(row: dict) -> dict:
                 "program": row.get("program") or "",
                 "university": row.get("university") or "",
             }
+            for row in rows
         ]
     }
     data = json.dumps(payload).encode("utf-8")
@@ -298,21 +399,24 @@ def _standardize_with_llm(row: dict) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
             resp_json = json.loads(resp.read().decode("utf-8"))
-        rows = resp_json.get("rows") or []
-        if rows:
-            llm_row = rows[0]
-            row["llm_generated_program"] = llm_row.get("llm_generated_program") or row.get("program") or ""
-            row["llm_generated_university"] = llm_row.get("llm_generated_university") or row.get("university") or ""
-            return row
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-        print(f"LLM standardization failed, using raw values: {e}")
-
-    row["llm_generated_program"] = row.get("program") or ""
-    row["llm_generated_university"] = row.get("university") or ""
-    return row
+        llm_rows = resp_json.get("rows") or []
+        if len(llm_rows) != len(rows):
+            raise RuntimeError("LLM returned an unexpected number of rows.")
+        for base_row, llm_row in zip(rows, llm_rows):
+            base_row["llm_generated_program"] = llm_row.get("llm_generated_program") or base_row.get("program") or ""
+            base_row["llm_generated_university"] = llm_row.get("llm_generated_university") or base_row.get("university") or ""
+        return rows
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError, RuntimeError) as e:
+        if len(rows) > 1:
+            mid = len(rows) // 2
+            left = _standardize_with_llm_batch(rows[:mid])
+            right = _standardize_with_llm_batch(rows[mid:])
+            return left + right
+        raise RuntimeError(f"LLM standardization failed: {e}")
 
 
 def main():
+    """End-to-end pull for one batch of new records."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--lock", dest="lock_path", default=None)
     args = parser.parse_args()
@@ -333,11 +437,16 @@ def main():
         except OSError:
             lock_path = None
 
+    conn = None
     try:
-        last_id = _read_last_scraped_id()
+        conn = psycopg.connect(**DB_CONFIG, autocommit=True)
+        ensure_table(conn)
+
+        last_id = _get_max_entry_id_from_db(conn)
+        if last_id is None:
+            last_id = _read_last_scraped_id()
         if last_id is None:
             last_id = _infer_last_id_from_file()
-
         if last_id is None:
             last_id = 950000
 
@@ -348,12 +457,9 @@ def main():
                 f.write(str(latest_id))
 
         if latest_id is not None and last_id >= latest_id:
-            print(f"No new entries: latest survey id is {latest_id}, already scraped.")
+            print(f"No new entries: latest survey id is {latest_id}, already scraped up to {last_id}.")
             status = "no_new_entries"
-            conn = psycopg.connect(**DB_CONFIG, autocommit=True)
-            ensure_table(conn)
             write_last_entries(conn, LAST_ENTRIES_PATH)
-            conn.close()
             return
 
         start_entry = last_id + 1
@@ -363,26 +469,50 @@ def main():
 
         reached_target = False
 
-        conn = psycopg.connect(**DB_CONFIG, autocommit=True)
-        ensure_table(conn)
         _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
 
         any_pages = False
-        for page in scrape_data(start_entry, end_entry, stop_on_placeholder_streak=(latest_id is None)):
+        batch = []
+        for page in scrape_data(
+            start_entry,
+            end_entry,
+            stop_on_placeholder_streak=(latest_id is None),
+            max_seconds=PULL_MAX_SECONDS,
+        ):
             any_pages = True
             cleaned = clean_data([page])
             cleaned_row = cleaned[0]
-            cleaned_row = _standardize_with_llm(cleaned_row)
-            normalized = [normalize_record(cleaned_row)]
+            processed_total += 1
+            last_attempted = get_last_attempted_id()
+            _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at, last_attempted)
+
+            if url_exists(conn, cleaned_row.get("url")):
+                duplicates_total += 1
+                _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
+                continue
+
+            batch.append(cleaned_row)
+            if len(batch) >= max(1, LLM_BATCH_SIZE):
+                standardized_rows = _standardize_with_llm_batch(batch)
+                normalized = [normalize_record(r) for r in standardized_rows]
+                inserted, duplicates = insert_new_records(conn, normalized)
+                inserted_total += inserted
+                duplicates_total += duplicates
+                batch = []
+                _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
+
+                if inserted_total >= target_new:
+                    reached_target = True
+                    break
+
+        if batch and not reached_target:
+            standardized_rows = _standardize_with_llm_batch(batch)
+            normalized = [normalize_record(r) for r in standardized_rows]
             inserted, duplicates = insert_new_records(conn, normalized)
             inserted_total += inserted
             duplicates_total += duplicates
-            processed_total += 1
+            batch = []
             _write_progress("running", inserted_total, duplicates_total, processed_total, target_new, started_at)
-
-            if inserted_total >= target_new:
-                reached_target = True
-                break
 
         write_last_entries(conn, LAST_ENTRIES_PATH)
         conn.close()
@@ -392,6 +522,12 @@ def main():
             if stop_reason == "placeholder_streak":
                 print("No more applicant entries found (placeholder streak).")
                 status = "no_more_entries"
+            elif stop_reason == "error_streak":
+                print("Pull stopped after too many failed fetches.")
+                status = "fetch_failed"
+            elif stop_reason == "timeout":
+                print("Pull timed out while fetching entries.")
+                status = "timeout"
             else:
                 print("No new pages found.")
                 status = "no_new_data"
@@ -412,6 +548,10 @@ def main():
                 status = "no_more_entries"
             else:
                 status = "partial_new_entries"
+        elif stop_reason == "timeout":
+            status = "timeout"
+        elif stop_reason == "error_streak":
+            status = "fetch_failed"
         elif latest_id is not None and last_attempted is not None and last_attempted >= latest_id:
             if inserted_total == 0:
                 status = "no_new_entries"
@@ -441,6 +581,11 @@ def main():
             try:
                 os.remove(lock_path)
             except OSError:
+                pass
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
                 pass
 
 

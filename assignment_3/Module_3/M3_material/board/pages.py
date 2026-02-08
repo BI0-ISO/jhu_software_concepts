@@ -1,3 +1,12 @@
+"""
+Flask routes for Module 3 pages.
+
+Responsibilities:
+- Render the analysis dashboard and PDF link.
+- Start/track/cancel the pull-data subprocess.
+- Expose a small JSON status endpoint for the UI timer and LLM readiness.
+"""
+
 import os
 import sys
 import subprocess
@@ -31,7 +40,7 @@ LOCK_PATH = os.path.join(BASE_DIR, "db", "pull_data.lock")
 DONE_PATH = os.path.join(BASE_DIR, "db", "pull_data.done")
 PROGRESS_PATH = os.path.join(BASE_DIR, "db", "pull_progress.json")
 LOCK_STALE_SECONDS = 900
-MAX_NEW_RECORDS = 25  # target new records per pull
+MAX_NEW_RECORDS = int(os.getenv("TARGET_NEW_RECORDS", "100"))
 REPORT_PATH = os.path.join(BASE_DIR, "static", "reports", "module_3_report.pdf")
 ANALYSIS_CACHE_PATH = os.path.join(BASE_DIR, "db", "analysis_cache.json")
 
@@ -40,6 +49,7 @@ PULL_LAST_EXIT = None
 
 
 def _pid_running(pid):
+    """Return True if the OS reports the PID is still alive."""
     try:
         os.kill(pid, 0)
     except OSError:
@@ -48,6 +58,7 @@ def _pid_running(pid):
 
 
 def _llm_status_url():
+    """Compute the LLM status URL from environment settings."""
     host_url = os.getenv("LLM_HOST_URL")
     if host_url:
         parts = urlsplit(host_url)
@@ -58,6 +69,7 @@ def _llm_status_url():
 
 
 def _is_llm_ready():
+    """Check if the local LLM service reports ready."""
     url = _llm_status_url()
     try:
         with urllib.request.urlopen(url, timeout=1) as resp:
@@ -73,6 +85,7 @@ def _is_llm_ready():
 
 
 def _read_progress():
+    """Read pull progress for UI status/ETA."""
     if not os.path.exists(PROGRESS_PATH):
         return None
     try:
@@ -83,39 +96,63 @@ def _read_progress():
 
 
 def _compute_results():
+    """Compute all stats for both 2026 cohort and all-time."""
     return {
         "total_applicants": count_total_applicants(),
-        "fall_2026_count": count_fall_2026_entries(),
-        "percent_international": percent_international_students(),
-        "average_metrics": average_metrics_all_applicants(),
-        "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(),
-        "acceptance_rate_fall_2026": acceptance_rate_fall_2026(),
-        "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(),
-        "jhu_masters_cs": count_jhu_masters_cs(),
-        "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(),
-        "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(),
-        "additional_question_1": additional_question_1(),
-        "additional_question_2": additional_question_2(),
+        "year_2026": {
+            "fall_2026_count": count_fall_2026_entries(True),
+            "percent_international": percent_international_students(True),
+            "average_metrics": average_metrics_all_applicants(True),
+            "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(True),
+            "acceptance_rate_fall_2026": acceptance_rate_fall_2026(True),
+            "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(True),
+            "jhu_masters_cs": count_jhu_masters_cs(True),
+            "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(True),
+            "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(True),
+            "additional_question_1": additional_question_1(True),
+            "additional_question_2": additional_question_2(True),
+        },
+        "all_time": {
+            "total_entries": count_total_applicants(),
+            "percent_international": percent_international_students(False),
+            "average_metrics": average_metrics_all_applicants(False),
+            "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(False),
+            "acceptance_rate_fall_2026": acceptance_rate_fall_2026(False),
+            "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(False),
+            "jhu_masters_cs": count_jhu_masters_cs(False),
+            "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(False),
+            "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(False),
+            "additional_question_1": additional_question_1(False),
+            "additional_question_2": additional_question_2(False),
+        },
     }
 
 
 def _read_cached_results():
+    """Load cached analysis JSON if present and valid."""
     if not os.path.exists(ANALYSIS_CACHE_PATH):
         return None
     try:
         with open(ANALYSIS_CACHE_PATH, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            if not isinstance(data, dict):
+                return None
+            if "year_2026" not in data or "all_time" not in data:
+                return None
+            return data
     except (OSError, json.JSONDecodeError):
         return None
 
 
 def _write_cached_results(results):
+    """Persist analysis results to disk for fast page loads."""
     os.makedirs(os.path.dirname(ANALYSIS_CACHE_PATH), exist_ok=True)
     with open(ANALYSIS_CACHE_PATH, "w") as f:
         json.dump(results, f, indent=2)
 
 
 def _is_pull_running():
+    """Determine whether a pull is currently running."""
     global PULL_PROCESS, PULL_LAST_EXIT
     if PULL_PROCESS is None:
         if os.path.exists(DONE_PATH):
@@ -129,6 +166,15 @@ def _is_pull_running():
             try:
                 with open(LOCK_PATH, "r") as f:
                     pid_text = f.read().strip()
+                if not pid_text:
+                    os.remove(LOCK_PATH)
+                    return False
+                if pid_text == "starting":
+                    age = time.time() - os.path.getmtime(LOCK_PATH)
+                    if age > 10:
+                        os.remove(LOCK_PATH)
+                        return False
+                    return True
                 if pid_text.isdigit() and not _pid_running(int(pid_text)):
                     os.remove(LOCK_PATH)
                     return False
@@ -153,7 +199,30 @@ def _is_pull_running():
     return False
 
 
+def _clear_pull_state():
+    """Terminate any running pull and clear lock/progress files."""
+    global PULL_PROCESS, PULL_LAST_EXIT
+    if PULL_PROCESS is not None and PULL_PROCESS.poll() is None:
+        try:
+            PULL_PROCESS.terminate()
+            PULL_PROCESS.wait(timeout=3)
+        except Exception:
+            try:
+                PULL_PROCESS.kill()
+            except Exception:
+                pass
+    PULL_PROCESS = None
+    PULL_LAST_EXIT = None
+    for path in (LOCK_PATH, DONE_PATH, PROGRESS_PATH):
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except OSError:
+            pass
+
+
 def _start_pull():
+    """Start the pull subprocess and register it in the lock file."""
     global PULL_PROCESS, PULL_LAST_EXIT
     if _is_pull_running():
         return False
@@ -163,23 +232,44 @@ def _start_pull():
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     log_file = open(LOG_PATH, "a")
     try:
+        os.makedirs(os.path.dirname(LOCK_PATH), exist_ok=True)
         with open(LOCK_PATH, "w") as f:
             f.write("starting")
     except OSError:
         pass
-    PULL_PROCESS = subprocess.Popen(
-        [sys.executable, PULL_SCRIPT, "--lock", LOCK_PATH],
-        cwd=BASE_DIR,
-        stdout=log_file,
-        stderr=log_file
-    )
-    log_file.close()
-    PULL_LAST_EXIT = None
-    return True
+    try:
+        PULL_PROCESS = subprocess.Popen(
+            [sys.executable, PULL_SCRIPT, "--lock", LOCK_PATH],
+            cwd=BASE_DIR,
+            stdout=log_file,
+            stderr=log_file
+        )
+        # Overwrite lock with PID once started so it isn't stuck at "starting"
+        try:
+            with open(LOCK_PATH, "w") as f:
+                f.write(str(PULL_PROCESS.pid))
+        except OSError:
+            pass
+        PULL_LAST_EXIT = None
+        return True
+    except Exception as e:
+        try:
+            log_file.write(f"Failed to start pull: {e}\n")
+        except Exception:
+            pass
+        try:
+            if os.path.exists(LOCK_PATH):
+                os.remove(LOCK_PATH)
+        except OSError:
+            pass
+        return False
+    finally:
+        log_file.close()
 
 
 @bp.route("/projects/module-3")
 def module_3_project():
+    """Render the Module 3 dashboard with current analysis results."""
     pull_running = _is_pull_running()
     llm_ready = _is_llm_ready()
     status = request.args.get("status")
@@ -209,13 +299,20 @@ def module_3_project():
             message = f"Pull is completed with {count_text} records. You can now update analysis."
         elif done_status == "partial_new_entries":
             count_text = done_inserted if done_inserted is not None else "some"
-            message = f"Pull is completed with {count_text} new records (less than 200 available). You can now update analysis."
+            message = (
+                f"Pull is completed with {count_text} new records "
+                f"(less than {MAX_NEW_RECORDS} available). You can now update analysis."
+            )
         elif done_status == "no_new_entries":
             message = "Pull stopped: the most recent GradCafe submission is already in the database."
         elif done_status == "no_more_entries":
             message = "Pull stopped: no more applicant entries were found. You can now update analysis."
         elif done_status == "no_new_data":
             message = "Pull is completed. No new records were found, but you can now update analysis."
+        elif done_status == "fetch_failed":
+            message = "Pull stopped after repeated fetch failures. GradCafe may be blocking requests. You can try again later."
+        elif done_status == "timeout":
+            message = "Pull timed out before completing. You can try again or update analysis with current data."
         elif done_status == "error":
             message = "Pull completed with errors. Check pull_data.log for details."
         elif done_status:
@@ -235,6 +332,10 @@ def module_3_project():
             message = "Pull Data finished with errors. Check pull_data.log for details."
         elif status == "pull_done":
             message = "Pull Data finished. You can click Update Analysis to refresh the page."
+        elif status == "pull_cancelled":
+            message = "Pull cancelled. You can start a new pull or update analysis."
+        elif status == "pull_timeout":
+            message = "Pull timed out. You can try again or update analysis with current data."
 
     results = _read_cached_results()
     if results is None:
@@ -252,7 +353,9 @@ def module_3_project():
             pass
     return render_template(
         "project_module_3.html",
-        results=results,
+        results_2026=results.get("year_2026", {}),
+        results_all=results.get("all_time", {}),
+        total_applicants=results.get("total_applicants"),
         pull_running=pull_running,
         llm_ready=llm_ready,
         pull_progress=_read_progress(),
@@ -264,6 +367,7 @@ def module_3_project():
 
 @bp.route("/projects/module-3/pull-data", methods=["POST"])
 def pull_data():
+    """Trigger a background pull if LLM is ready and no pull is running."""
     if _is_pull_running():
         return redirect(url_for("m3_pages.module_3_project", status="pull_running"))
     if not _is_llm_ready():
@@ -275,8 +379,17 @@ def pull_data():
     return redirect(url_for("m3_pages.module_3_project", status="pull_started"))
 
 
+@bp.route("/projects/module-3/cancel-pull", methods=["POST"])
+def cancel_pull():
+    if _is_pull_running():
+        _clear_pull_state()
+        return redirect(url_for("m3_pages.module_3_project", status="pull_cancelled"))
+    return redirect(url_for("m3_pages.module_3_project"))
+
+
 @bp.route("/projects/module-3/update-analysis", methods=["POST"])
 def update_analysis():
+    """Recompute analysis and regenerate the PDF report."""
     if _is_pull_running():
         return redirect(url_for("m3_pages.module_3_project", status="pull_running"))
     results = _compute_results()
@@ -290,6 +403,7 @@ def update_analysis():
 
 @bp.route("/projects/module-3/pull-status")
 def pull_status():
+    """Return JSON status for UI polling (LLM ready + progress)."""
     running = _is_pull_running()
     done_status = None
     if os.path.exists(DONE_PATH):

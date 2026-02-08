@@ -1,4 +1,13 @@
-# clean.py
+"""
+GradCafe HTML cleaner.
+
+This module takes raw HTML pages from the scraper and converts them into a
+consistent dict shape used by the database loader. It focuses on extracting:
+- core program/university fields
+- applicant status/decision dates
+- term/year, citizenship, GRE/GPA
+- sanitized comments/notes
+"""
 import re
 import json
 from bs4 import BeautifulSoup
@@ -11,14 +20,22 @@ def clean_data(raw_pages):
     cleaned = []
 
     for page in raw_pages:
+        # Parse the HTML into text so regex extraction is consistent.
         soup = BeautifulSoup(page["html"], "html.parser")
         text = soup.get_text("\n")
 
+        # The decision line can include a date string ("Accepted on Jan 31").
         decision_raw = _extract(r"Decision\s*(.*)", text)
+        decision_date = None
+        if decision_raw:
+            match = re.search(r"\bon\s+(.+)$", decision_raw, re.IGNORECASE)
+            if match:
+                decision_date = match.group(1).strip()
         status = _normalize_decision(decision_raw)
         acceptance_date = _extract(r"Accepted on\s*(.*)", text)
         term = _extract(r"\b(Fall|Spring|Summer|Winter)\b", text)
 
+        # Build a normalized record. More numeric cleanup happens later.
         record = {
             "program": _extract(r"Program\s*(.*)", text),
             "university": _extract(r"Institution\s*(.*)", text),
@@ -27,9 +44,10 @@ def clean_data(raw_pages):
             "url": page["url"],
             "applicant_status": status,
             "acceptance_date": acceptance_date,
+            "decision_date": decision_date,
             "rejection_date": _extract(r"Rejected on\s*(.*)", text),
             "degree_type": _extract_degree_type(text),
-            "start_term": _normalize_start_term(status, term, acceptance_date),
+            "start_term": term,
             "start_year": _extract(r"\b(20\d{2})\b", text),
             "citizenship": _extract(r"\b(International|American)\b", text),
             "gre_total": _none_if_zero(_extract(r"GRE General:\s*(\d{1,3})", text)),
@@ -44,11 +62,13 @@ def clean_data(raw_pages):
 
 
 def save_data(data, filename="applicant_data.json"):
+    """Utility helper to persist cleaned data for debugging."""
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
 
 
 def load_data(filename="applicant_data.json"):
+    """Utility helper to load cleaned data back into memory."""
     with open(filename, "r") as f:
         return json.load(f)
 
@@ -56,11 +76,13 @@ def load_data(filename="applicant_data.json"):
 # ---------- Private helper functions ----------
 
 def _extract(pattern, text, group=1):
+    """Regex helper that returns the requested capture group or None."""
     match = re.search(pattern, text, re.IGNORECASE)
     return match.group(group).strip() if match else None
 
 
 def _extract_date_added(text):
+    """Extract a usable date-added string while ignoring placeholder values."""
     match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})", text)
     if match:
         value = match.group(1)
@@ -86,6 +108,7 @@ def _extract_notes(text):
 
 
 def _extract_degree_type(text):
+    """Extract the degree type block from the result page."""
     match = re.search(r"Type\s*(.*?)\s*Degree", text, re.IGNORECASE | re.DOTALL)
     if not match:
         return None
@@ -94,6 +117,7 @@ def _extract_degree_type(text):
 
 
 def _extract_gpa(text):
+    """Extract the GPA string; numeric normalization happens downstream."""
     match = re.search(r"Undergrad\s*GPA\s*[:\n]+\s*([^\n]+?)\s*(?=GRE General)", text, re.IGNORECASE | re.DOTALL)
     if not match:
         return None
@@ -104,6 +128,7 @@ def _extract_gpa(text):
 
 
 def _none_if_zero(value):
+    """Convert zero-like values to None to avoid skewing averages."""
     if value is None:
         return None
     try:
@@ -113,6 +138,7 @@ def _none_if_zero(value):
 
 
 def _normalize_decision(value):
+    """Map raw decision text to accepted/rejected/waitlisted or None."""
     if not value:
         return None
     value = value.lower()
@@ -125,10 +151,6 @@ def _normalize_decision(value):
     return None
 
 
-def _normalize_start_term(status, term, acceptance_date):
-    if status != "accepted":
-        return None
-    return term
 
 
 def _sanitize_text(text):
