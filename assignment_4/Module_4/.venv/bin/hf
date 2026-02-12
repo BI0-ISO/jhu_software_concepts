@@ -1,0 +1,8 @@
+#!/Users/mckeysa1/Github-Setup/jhu_software_concepts/assignment_4/Module_4/.venv/bin/python
+# -*- coding: utf-8 -*-
+import re
+import sys
+from huggingface_hub.cli.hf import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())

@@ -1,0 +1,25 @@
+<!-- Home page template for the Module 3 site. -->
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="home-layout">
+    <div class="home-text">
+        <h1>Samuel McKey</h1>
+        <h2>Biomedical Engineer, Research Engineer @ JHU APL</h2>
+        <p>
+            Welcome! My name is Samuel McKey and I am a biomedical engineer. I earned my Bachelor of Science in Biomedical Engineering from the University of Virginia. 
+            Since graduating, I have been working at the Johns Hopkins Applied Physics Laboratory (APL), where my focus is on bridging biology with custom hardware. My day to day responsibilities span biomanufacturing, additive manufacturing, optical physics, AI driven protein development, and building hardware capabilities from the ground up. In short, I work at the intersection of living systems and engineered devices to create next generation bioprocess tools.
+            I am currently enrolled in this course to satisfy the prerequisites for the Artificial Intelligence Master’s program at Johns Hopkins University. I’ve already had an amazing experience learning about website development in this first module, and I’m excited to dive deeper as the semester progresses.
+            I’m always eager to learn, grow, and apply new knowledge to solve challenging problems at the bio AI interface.
+
+        </p>
+    </div>
+
+    <div class="home-image">
+        <img src="{{ url_for('static', filename='images/profile.jpeg') }}" 
+             alt="Additional Image" 
+             class="home-main-image">
+    </div>
+</div>
+{% endblock %}
