@@ -128,6 +128,81 @@ Evidence:
 - Coverage is enforced in `assignment_4/Module_4/pytest.ini`:
   - `--cov=src --cov-report=term-missing --cov-fail-under=100`
 
+### Section 8 – Sphinx Documentation (Overview, Architecture, API, Testing)
+
+Requirement summary: Sphinx docs are configured and published via Read the Docs, and include overview/setup, architecture, API reference, and testing guidance.
+
+Evidence:
+
+- Sphinx configuration is in `assignment_4/Module_4/docs/source/conf.py`.
+- Documentation pages:
+  - Overview & setup: `assignment_4/Module_4/docs/source/overview.rst`
+  - Architecture: `assignment_4/Module_4/docs/source/architecture.rst`
+  - API reference (autodoc): `assignment_4/Module_4/docs/source/api.rst`
+  - Testing guide: `assignment_4/Module_4/docs/source/testing.rst`
+- Read the Docs integration uses `.readthedocs.yaml` at repo root:
+  - `jhu_software_concepts/.readthedocs.yaml` points to `assignment_4/Module_4/docs/source/conf.py`.
+- Required folder structure is present:
+  - `assignment_4/Module_4/src`, `assignment_4/Module_4/tests`, `assignment_4/Module_4/pytest.ini`,
+    `assignment_4/Module_4/requirements.txt`, `assignment_4/Module_4/README.md`,
+    `assignment_4/Module_4/docs`.
+
+## Full Checklist (Required Items)
+
+This section confirms each required item and where it is implemented.
+
+- **GET `/analysis` renders required components**: Verified in `assignment_4/Module_4/tests/test_flask_page.py` (status 200, “Analysis”, “Answer:”, and both buttons).
+- **POST `/pull-data` returns 200/202 and triggers loader when not busy**: Verified in `assignment_4/Module_4/tests/test_buttons.py` using injected `PULL_HANDLER`.
+- **Busy gating for `/pull-data` and `/update-analysis`**: Verified in `assignment_4/Module_4/tests/test_buttons.py` (returns 409 and does not run handlers).
+- **Analysis formatting (two decimals + “Answer:”)**: Verified in `assignment_4/Module_4/tests/test_analysis_format.py`.
+- **DB writes after `/pull-data`**: Verified in `assignment_4/Module_4/tests/test_db_insert.py` (non‑null required fields).
+- **Idempotency / no duplicate rows**: Verified in `assignment_4/Module_4/tests/test_db_insert.py`.
+- **Query results contain required keys**: Verified in `assignment_4/Module_4/tests/test_analysis_format.py`.
+- **End‑to‑end flow (pull → update → render)**: Verified in `assignment_4/Module_4/tests/test_integration_end_to_end.py`.
+- **All tests marked (`web`, `buttons`, `analysis`, `db`, `integration`)**: Markers defined in `assignment_4/Module_4/pytest.ini`, and all tests use `pytestmark` or `@pytest.mark.*`.
+- **Marker command runs full suite**: `pytest -m "web or buttons or analysis or db or integration"` (documented in README and validated by coverage enforcement in `pytest.ini`).
+- **Flask `create_app(...)` factory**: Implemented in `assignment_4/Module_4/src/run.py`.
+- **Stable UI selectors**: `data-testid="pull-data-btn"` and `data-testid="update-analysis-btn"` in `assignment_4/Module_4/src/M3_material/templates/project_module_3.html`.
+- **`DATABASE_URL` support**: Implemented in `assignment_4/Module_4/src/db/db_config.py`.
+- **Sphinx docs (overview, architecture, API, testing) + published HTML**: Implemented in `assignment_4/Module_4/docs/source/*.rst` and published at the Read the Docs URL listed above.
+
+## Should-Have Checklist (Recommended Items)
+
+This section maps each “SHOULD” item to where it is implemented.
+
+- **Dependency injection for tests**: Implemented via `app.config` overrides (e.g., `PULL_HANDLER`, `UPDATE_HANDLER`, `PULL_RUNNING_CHECK`, `LLM_READY_CHECK`) in `assignment_4/Module_4/tests/test_buttons.py` and `assignment_4/Module_4/tests/test_integration_end_to_end.py`.
+- **BeautifulSoup + regex for HTML assertions**: Used in `assignment_4/Module_4/tests/test_flask_page.py` and `assignment_4/Module_4/tests/test_analysis_format.py` (regex enforces two-decimal percentages).
+- **Negative/error-path tests**: Covered throughout the suite (e.g., error branches in `assignment_4/Module_4/tests/test_pages_module.py`, `assignment_4/Module_4/tests/test_pull_data_module.py`, `assignment_4/Module_4/tests/test_scrape_module.py`).
+- **CI workflow with Postgres**: Provided in `jhu_software_concepts/.github/workflows/tests.yml` (starts Postgres and runs pytest).
+- **Fast, deterministic tests**: Network and scraper calls are mocked; tests use Flask’s test client and controlled fixtures.
+- **Operational notes page**: Implemented in `assignment_4/Module_4/docs/source/operational_notes.rst`.
+- **Troubleshooting page**: Implemented in `assignment_4/Module_4/docs/source/troubleshooting.rst`.
+
+## Shall-Not Checklist (Prohibited Items)
+
+This section confirms the suite avoids prohibited practices.
+
+- **No tests depend on live internet or long scrapes**: Scraper and network calls are mocked (e.g., `assignment_4/Module_4/tests/test_scrape_module.py`, `test_pages_module.py`).
+- **No arbitrary sleep for busy-state checks**: Busy state is injected via `app.config` (`PULL_RUNNING_CHECK`, `LLM_READY_CHECK`) in tests like `assignment_4/Module_4/tests/test_buttons.py`.
+- **No unmarked tests**: All tests use `pytestmark` or `@pytest.mark.*` and markers are defined in `assignment_4/Module_4/pytest.ini`.
+- **No variable precision percentages**: Enforced by `assignment_4/Module_4/tests/test_analysis_format.py`.
+- **No schema-breaking changes**: Tests exercise the existing Module‑3 schema via `db/migrate.py` and insert/select operations (`assignment_4/Module_4/tests/test_db_insert.py`, `test_db_loaders.py`).
+- **No hard-coded secrets**: No secrets in code/tests; database access uses `DATABASE_URL` (`assignment_4/Module_4/src/db/db_config.py`).
+- **No manual UI interaction**: All UI checks use Flask’s test client (e.g., `assignment_4/Module_4/tests/test_flask_page.py`).
+
+## Deliverables Checklist
+
+- **SSH URL to GitHub repository**: `git@github.com:BI0-ISO/jhu_software_concepts.git`  
+- **README under Module_4**: Present at `assignment_4/Module_4/README.md`.
+- **requirements.txt under Module_4**: Present at `assignment_4/Module_4/requirements.txt`.
+- **Sphinx generated HTML**: Present at `assignment_4/Module_4/docs/build/html/index.html`.
+- **Proof of coverage**: Present at `assignment_4/Module_4/coverage_summary.txt`.
+- **GitHub Actions proof**:
+  - Workflow file present at `assignment_4/Module_4/.github/workflows/tests.yml`.
+  - `actions_success.png` **missing** — add after a green run.
+- **Read the Docs link**: Present above in this README.
+- **All listed test files under Module_4**: Present in `assignment_4/Module_4/tests/`.
+
 ## Documentation
 
 Sphinx docs live in `docs/` and include setup, architecture, API references, and testing guidance.
@@ -139,7 +214,7 @@ cd docs
 make html
 ```
 
-Read the Docs URL: replace with your published link.
+Read the Docs URL: https://jhu-software-concepts-sphinxspring2026.readthedocs.io/en/latest/
 
 ## CI
 
