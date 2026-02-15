@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to Module_4’s documentation! &mdash; Module_4 2-14-26 documentation</title>
+  <title>Module 4 – Grad Cafe Analytics &mdash; Module_4 2-14-26 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
@@ -18,7 +18,8 @@
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Overview &amp; Setup" href="overview.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,12 +41,16 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Welcome to Module_4’s documentation!</a></li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operational_notes.html">Operational Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
 </ul>
-</div>
+
         </div>
       </div>
     </nav>
@@ -60,7 +65,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to Module_4’s documentation!</li>
+      <li class="breadcrumb-item active">Module 4 – Grad Cafe Analytics</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -70,24 +75,60 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="welcome-to-module-4-s-documentation">
-<h1>Welcome to Module_4’s documentation!<a class="headerlink" href="#welcome-to-module-4-s-documentation" title="Link to this heading"></a></h1>
+  <section id="module-4-grad-cafe-analytics">
+<h1>Module 4 – Grad Cafe Analytics<a class="headerlink" href="#module-4-grad-cafe-analytics" title="Link to this heading"></a></h1>
+<p>This documentation covers the Grad Cafe analytics service: a Flask web app,
+an ETL pipeline that ingests GradCafe data, and a PostgreSQL-backed analysis
+layer with tested and documented APIs.</p>
 <div class="toctree-wrapper compound">
-</div>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview &amp; Setup</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html#environment-variables">Environment Variables</a></li>
 </ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#web-layer-flask">Web Layer (Flask)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#etl-layer-scrape-clean-load">ETL Layer (Scrape → Clean → Load)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#database-layer">Database Layer</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#markers">Markers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#selectors">Selectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#fixtures-test-doubles">Fixtures / Test Doubles</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-M2_material.scrape">Scraper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-M2_material.clean">Cleaner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-db.load_data">Load Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-M3_material.query_data">Query Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-M3_material.board.pages">Flask Routes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="operational_notes.html">Operational Notes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="operational_notes.html#busy-state-policy">Busy-State Policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operational_notes.html#idempotency-strategy">Idempotency Strategy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#database-connection-errors">Database Connection Errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#test-failures-due-to-busy-state">Test Failures Due to Busy State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html#docs-build-errors">Docs Build Errors</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </section>
 
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="overview.html" class="btn btn-neutral float-right" title="Overview &amp; Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 

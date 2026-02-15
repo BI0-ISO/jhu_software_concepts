@@ -11,10 +11,14 @@ copyright = '2026, Samuel McKey'
 author = 'Samuel McKey'
 release = '2-14-26'
 
-import os 
+import os
 import sys
 
-sys.path.insert(0, os.path.abspath('/Users/mckeysa1/Github-Setup/jhu_software_concepts/assignment_4/Module_4/docs'))
+# Ensure Sphinx can import the application modules for autodoc.
+DOCS_DIR = os.path.abspath(os.path.dirname(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(DOCS_DIR, "..", ".."))
+SRC_DIR = os.path.join(PROJECT_ROOT, "src")
+sys.path.insert(0, SRC_DIR)
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -22,8 +26,11 @@ sys.path.insert(0, os.path.abspath('/Users/mckeysa1/Github-Setup/jhu_software_co
 # Extensions for API docs + Read the Docs theme support.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx_rtd_theme',
 ]
+
+autosummary_generate = True
 
 templates_path = ['_templates']
 exclude_patterns = []

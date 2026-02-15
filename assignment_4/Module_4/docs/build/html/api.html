@@ -1,0 +1,393 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference &mdash; Module_4 2-14-26 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=92fd9be5" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=b15c6efe"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Operational Notes" href="operational_notes.html" />
+    <link rel="prev" title="Testing Guide" href="testing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Module_4
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Overview &amp; Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-M2_material.scrape">Scraper</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.scrape.get_last_attempted_id"><code class="docutils literal notranslate"><span class="pre">get_last_attempted_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.scrape.get_last_stop_reason"><code class="docutils literal notranslate"><span class="pre">get_last_stop_reason()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.scrape.get_latest_survey_id"><code class="docutils literal notranslate"><span class="pre">get_latest_survey_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.scrape.scrape_data"><code class="docutils literal notranslate"><span class="pre">scrape_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-M2_material.clean">Cleaner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.clean.clean_data"><code class="docutils literal notranslate"><span class="pre">clean_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.clean.load_data"><code class="docutils literal notranslate"><span class="pre">load_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M2_material.clean.save_data"><code class="docutils literal notranslate"><span class="pre">save_data()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-db.load_data">Load Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#db.load_data.create_table"><code class="docutils literal notranslate"><span class="pre">create_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#db.load_data.insert_records"><code class="docutils literal notranslate"><span class="pre">insert_records()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#db.load_data.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-M3_material.query_data">Query Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.acceptance_rate_fall_2026"><code class="docutils literal notranslate"><span class="pre">acceptance_rate_fall_2026()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.additional_question_1"><code class="docutils literal notranslate"><span class="pre">additional_question_1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.additional_question_2"><code class="docutils literal notranslate"><span class="pre">additional_question_2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.average_metrics_all_applicants"><code class="docutils literal notranslate"><span class="pre">average_metrics_all_applicants()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.avg_gpa_acceptances_fall_2026"><code class="docutils literal notranslate"><span class="pre">avg_gpa_acceptances_fall_2026()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.avg_gpa_american_fall_2026"><code class="docutils literal notranslate"><span class="pre">avg_gpa_american_fall_2026()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.build_analysis_results"><code class="docutils literal notranslate"><span class="pre">build_analysis_results()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.count_fall_2026_entries"><code class="docutils literal notranslate"><span class="pre">count_fall_2026_entries()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.count_jhu_masters_cs"><code class="docutils literal notranslate"><span class="pre">count_jhu_masters_cs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.count_top_phd_acceptances_2026_llm"><code class="docutils literal notranslate"><span class="pre">count_top_phd_acceptances_2026_llm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.count_top_phd_acceptances_2026_raw_university"><code class="docutils literal notranslate"><span class="pre">count_top_phd_acceptances_2026_raw_university()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.count_total_applicants"><code class="docutils literal notranslate"><span class="pre">count_total_applicants()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.get_connection"><code class="docutils literal notranslate"><span class="pre">get_connection()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.get_latest_db_id"><code class="docutils literal notranslate"><span class="pre">get_latest_db_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.query_data.percent_international_students"><code class="docutils literal notranslate"><span class="pre">percent_international_students()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-M3_material.board.pages">Flask Routes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.analysis_page"><code class="docutils literal notranslate"><span class="pre">analysis_page()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.cancel_pull"><code class="docutils literal notranslate"><span class="pre">cancel_pull()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.module_3_project"><code class="docutils literal notranslate"><span class="pre">module_3_project()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.pull_data"><code class="docutils literal notranslate"><span class="pre">pull_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.pull_data_api"><code class="docutils literal notranslate"><span class="pre">pull_data_api()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.pull_status"><code class="docutils literal notranslate"><span class="pre">pull_status()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.update_analysis"><code class="docutils literal notranslate"><span class="pre">update_analysis()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#M3_material.board.pages.update_analysis_api"><code class="docutils literal notranslate"><span class="pre">update_analysis_api()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="operational_notes.html">Operational Notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Module_4</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<section id="module-M2_material.scrape">
+<span id="scraper"></span><h2>Scraper<a class="headerlink" href="#module-M2_material.scrape" title="Link to this heading"></a></h2>
+<p>GradCafe scraper.</p>
+<p>Iterates over sequential result IDs, fetches HTML pages, filters placeholder
+entries, and yields minimal raw records (HTML + URL + date_added).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.scrape.get_last_attempted_id">
+<span class="sig-prename descclassname"><span class="pre">M2_material.scrape.</span></span><span class="sig-name descname"><span class="pre">get_last_attempted_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M2_material.scrape.get_last_attempted_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.scrape.get_last_stop_reason">
+<span class="sig-prename descclassname"><span class="pre">M2_material.scrape.</span></span><span class="sig-name descname"><span class="pre">get_last_stop_reason</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M2_material.scrape.get_last_stop_reason" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.scrape.get_latest_survey_id">
+<span class="sig-prename descclassname"><span class="pre">M2_material.scrape.</span></span><span class="sig-name descname"><span class="pre">get_latest_survey_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#M2_material.scrape.get_latest_survey_id" title="Link to this definition"></a></dt>
+<dd><p>Fetch the GradCafe survey page and return the highest result ID found.
+Returns None if the page can’t be fetched or parsed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.scrape.scrape_data">
+<span class="sig-prename descclassname"><span class="pre">M2_material.scrape.</span></span><span class="sig-name descname"><span class="pre">scrape_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_entry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_entry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_on_placeholder_streak</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">placeholder_limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_failures</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M2_material.scrape.scrape_data" title="Link to this definition"></a></dt>
+<dd><p>Generator that yields cleaned scrape payloads:
+{“url”: &lt;url&gt;, “html”: &lt;html content&gt;, “date_added”: &lt;added on&gt;}</p>
+</dd></dl>
+
+</section>
+<section id="module-M2_material.clean">
+<span id="cleaner"></span><h2>Cleaner<a class="headerlink" href="#module-M2_material.clean" title="Link to this heading"></a></h2>
+<p>GradCafe HTML cleaner.</p>
+<p>This module takes raw HTML pages from the scraper and converts them into a
+consistent dict shape used by the database loader. It focuses on extracting:
+- core program/university fields
+- applicant status/decision dates
+- term/year, citizenship, GRE/GPA
+- sanitized comments/notes</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.clean.clean_data">
+<span class="sig-prename descclassname"><span class="pre">M2_material.clean.</span></span><span class="sig-name descname"><span class="pre">clean_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_pages</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M2_material.clean.clean_data" title="Link to this definition"></a></dt>
+<dd><p>Converts raw GradCafe HTML into structured applicant data.
+Sanitizes notes/comments to remove emojis/unwanted Unicode characters.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.clean.load_data">
+<span class="sig-prename descclassname"><span class="pre">M2_material.clean.</span></span><span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'applicant_data.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M2_material.clean.load_data" title="Link to this definition"></a></dt>
+<dd><p>Utility helper to load cleaned data back into memory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M2_material.clean.save_data">
+<span class="sig-prename descclassname"><span class="pre">M2_material.clean.</span></span><span class="sig-name descname"><span class="pre">save_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'applicant_data.json'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M2_material.clean.save_data" title="Link to this definition"></a></dt>
+<dd><p>Utility helper to persist cleaned data for debugging.</p>
+</dd></dl>
+
+</section>
+<section id="module-db.load_data">
+<span id="load-data"></span><h2>Load Data<a class="headerlink" href="#module-db.load_data" title="Link to this heading"></a></h2>
+<p>Load a JSON/JSONL file into the applicants table (smaller batches).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="db.load_data.create_table">
+<span class="sig-prename descclassname"><span class="pre">db.load_data.</span></span><span class="sig-name descname"><span class="pre">create_table</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#db.load_data.create_table" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="db.load_data.insert_records">
+<span class="sig-prename descclassname"><span class="pre">db.load_data.</span></span><span class="sig-name descname"><span class="pre">insert_records</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">records</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#db.load_data.insert_records" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="db.load_data.main">
+<span class="sig-prename descclassname"><span class="pre">db.load_data.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/Users/mckeysa1/Github-Setup/jhu_software_concepts/assignment_4/Module_4/src/M3_material/data/extra_llm_applicant_data.json'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#db.load_data.main" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-M3_material.query_data">
+<span id="query-data"></span><h2>Query Data<a class="headerlink" href="#module-M3_material.query_data" title="Link to this heading"></a></h2>
+<p>SQL query helpers for Module 3 analytics.</p>
+<p>Each function opens a DB connection, runs a focused SQL query, and returns
+simple numeric results used by the dashboard and PDF report.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.acceptance_rate_fall_2026">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">acceptance_rate_fall_2026</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.acceptance_rate_fall_2026" title="Link to this definition"></a></dt>
+<dd><p>Acceptance rate for the selected cohort.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.additional_question_1">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">additional_question_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.additional_question_1" title="Link to this definition"></a></dt>
+<dd><p>Percent of applicants who reported a GPA.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.additional_question_2">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">additional_question_2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.additional_question_2" title="Link to this definition"></a></dt>
+<dd><p>Average GRE Quant for international applicants.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.average_metrics_all_applicants">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">average_metrics_all_applicants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.average_metrics_all_applicants" title="Link to this definition"></a></dt>
+<dd><p>Average GPA/GRE metrics for the selected cohort.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.avg_gpa_acceptances_fall_2026">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">avg_gpa_acceptances_fall_2026</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.avg_gpa_acceptances_fall_2026" title="Link to this definition"></a></dt>
+<dd><p>Average GPA among accepted applicants in the selected cohort.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.avg_gpa_american_fall_2026">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">avg_gpa_american_fall_2026</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.avg_gpa_american_fall_2026" title="Link to this definition"></a></dt>
+<dd><p>Average GPA for American applicants in the selected cohort.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.build_analysis_results">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">build_analysis_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.build_analysis_results" title="Link to this definition"></a></dt>
+<dd><p>Return the analysis dict used by the Module 3 dashboard.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.count_fall_2026_entries">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">count_fall_2026_entries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.count_fall_2026_entries" title="Link to this definition"></a></dt>
+<dd><p>Count entries in the 2026 cohort (or all entries if filter disabled).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.count_jhu_masters_cs">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">count_jhu_masters_cs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.count_jhu_masters_cs" title="Link to this definition"></a></dt>
+<dd><p>Count JHU MS in CS applicants using LLM + raw text edge cases.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.count_top_phd_acceptances_2026_llm">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">count_top_phd_acceptances_2026_llm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.count_top_phd_acceptances_2026_llm" title="Link to this definition"></a></dt>
+<dd><p>Count accepted PhD CS applicants using LLM-normalized universities.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.count_top_phd_acceptances_2026_raw_university">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">count_top_phd_acceptances_2026_raw_university</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.count_top_phd_acceptances_2026_raw_university" title="Link to this definition"></a></dt>
+<dd><p>Count accepted PhD CS applicants by raw university names in program.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.count_total_applicants">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">count_total_applicants</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.count_total_applicants" title="Link to this definition"></a></dt>
+<dd><p>Total records in applicants table.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.get_connection">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">get_connection</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.get_connection" title="Link to this definition"></a></dt>
+<dd><p>Open a DB connection or raise a helpful error.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.get_latest_db_id">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">get_latest_db_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.get_latest_db_id" title="Link to this definition"></a></dt>
+<dd><p>Return the highest GradCafe result ID stored in the database.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.query_data.percent_international_students">
+<span class="sig-prename descclassname"><span class="pre">M3_material.query_data.</span></span><span class="sig-name descname"><span class="pre">percent_international_students</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_term_filter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.query_data.percent_international_students" title="Link to this definition"></a></dt>
+<dd><p>Percent international (not American/Other) in the selected cohort.</p>
+</dd></dl>
+
+</section>
+<section id="module-M3_material.board.pages">
+<span id="flask-routes"></span><h2>Flask Routes<a class="headerlink" href="#module-M3_material.board.pages" title="Link to this heading"></a></h2>
+<p>Flask routes for Module 3 pages.</p>
+<p>Responsibilities:
+- Render the analysis dashboard and PDF link.
+- Start/track/cancel the pull-data subprocess.
+- Expose a small JSON status endpoint for the UI timer and LLM readiness.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.analysis_page">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">analysis_page</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.analysis_page" title="Link to this definition"></a></dt>
+<dd><p>Alias for the Module 3 analysis dashboard.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.cancel_pull">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">cancel_pull</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.cancel_pull" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.module_3_project">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">module_3_project</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.module_3_project" title="Link to this definition"></a></dt>
+<dd><p>Render the Module 3 dashboard with current analysis results.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.pull_data">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">pull_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.pull_data" title="Link to this definition"></a></dt>
+<dd><p>Trigger a background pull if LLM is ready and no pull is running.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.pull_data_api">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">pull_data_api</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.pull_data_api" title="Link to this definition"></a></dt>
+<dd><p>JSON endpoint for triggering a pull.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.pull_status">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">pull_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.pull_status" title="Link to this definition"></a></dt>
+<dd><p>Return JSON status for UI polling (LLM ready + progress).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.update_analysis">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">update_analysis</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.update_analysis" title="Link to this definition"></a></dt>
+<dd><p>Recompute analysis and regenerate the PDF report.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="M3_material.board.pages.update_analysis_api">
+<span class="sig-prename descclassname"><span class="pre">M3_material.board.pages.</span></span><span class="sig-name descname"><span class="pre">update_analysis_api</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#M3_material.board.pages.update_analysis_api" title="Link to this definition"></a></dt>
+<dd><p>JSON endpoint to recompute analysis.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="testing.html" class="btn btn-neutral float-left" title="Testing Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="operational_notes.html" class="btn btn-neutral float-right" title="Operational Notes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Samuel McKey.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
