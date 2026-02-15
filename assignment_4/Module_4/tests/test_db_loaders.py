@@ -265,9 +265,19 @@ def test_load_data_script_entry(monkeypatch, tmp_path, sample_record):
     monkeypatch.setitem(sys.modules, "normalize", fake_norm)
     monkeypatch.setitem(sys.modules, "psycopg", fake_psycopg)
 
-    monkeypatch.setattr(sys, "argv", ["load_data.py", str(data_path)])
     root = Path(__file__).resolve().parents[1]
-    runpy.run_path(str(root / "src" / "db" / "load_data.py"), run_name="__main__")
+    # Ensure the default data file exists so the script entrypoint doesn't error.
+    default_path = root / "src" / "M3_material" / "data" / "extra_llm_applicant_data.json"
+    created = False
+    if not default_path.exists():
+        default_path.parent.mkdir(parents=True, exist_ok=True)
+        default_path.write_text("[]")
+        created = True
+    try:
+        runpy.run_path(str(root / "src" / "db" / "load_data.py"), run_name="__main__")
+    finally:
+        if created and default_path.exists():
+            default_path.unlink()
 
 
 def test_load_data_fallback_imports(monkeypatch):
