@@ -50,6 +50,7 @@ ABBREV_UNI: Dict[str, str] = {
     r"(?i)^mcg(\.|ill)?$": "McGill University",
     r"(?i)^(ubc|u\.?b\.?c\.?)$": "University of British Columbia",
     r"(?i)^uoft$": "University of Toronto",
+    r"(?i)^jhu$": "Johns Hopkins University",
 }
 
 COMMON_UNI_FIXES: Dict[str, str] = {

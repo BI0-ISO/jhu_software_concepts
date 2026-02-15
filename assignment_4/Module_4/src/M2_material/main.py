@@ -4,8 +4,12 @@ Standalone scraper runner (Module 2 legacy).
 This script scrapes a large range of GradCafe IDs and writes a JSON snapshot.
 It is not used by the web app, but it is kept as a bulk-scrape utility.
 """
-from scrape import scrape_data
-from clean import clean_data, save_data
+try:
+    from .scrape import scrape_data
+    from .clean import clean_data, save_data
+except ImportError:  # fallback when run as a script
+    from scrape import scrape_data
+    from clean import clean_data, save_data
 
 # Run configuration for bulk scraping.
 START_ENTRY = 950000

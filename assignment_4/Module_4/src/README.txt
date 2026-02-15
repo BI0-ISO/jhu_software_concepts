@@ -182,3 +182,16 @@ To import a large cleaned JSON/JSONL file:
 
 This rebuilds the applicants table using the cleaned file and invalidates the
 analysis cache so the dashboard shows updated results.
+
+
+Documentation (Sphinx)
+----------------------
+HTML docs live in Module_4/docs. Build them with:
+
+  cd ../docs
+  python -m pip install -r requirements.txt
+  python -m pip install -r ../src/requirements.txt
+  make html
+
+Open the generated HTML at:
+  docs/_build/html/index.html

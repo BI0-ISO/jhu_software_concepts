@@ -16,26 +16,15 @@ import urllib.request
 import urllib.error
 import psycopg
 from urllib.parse import urlsplit, urlunsplit
-from flask import render_template, redirect, url_for, request, jsonify
+from flask import render_template, redirect, url_for, request, jsonify, current_app
 from M3_material.reporting import generate_pdf_report
 from . import bp
 from M3_material.query_data import (
-    count_fall_2026_entries,
-    count_total_applicants,
-    percent_international_students,
-    average_metrics_all_applicants,
-    avg_gpa_american_fall_2026,
-    acceptance_rate_fall_2026,
-    avg_gpa_acceptances_fall_2026,
-    count_jhu_masters_cs,
-    count_top_phd_acceptances_2026_raw_university,
-    count_top_phd_acceptances_2026_llm,
-    additional_question_1,
-    additional_question_2,
+    build_analysis_results,
     get_latest_db_id
 )
 
-from db.db_config import DB_CONFIG
+from db.db_config import get_db_config
 from config import TARGET_NEW_RECORDS, LLM_HOST, LLM_PORT
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -88,6 +77,38 @@ def _is_llm_ready():
         return False
 
 
+def _cfg(name, default):
+    """Return app config override if set."""
+    try:
+        app = current_app._get_current_object()
+    except RuntimeError:
+        return default
+    return app.config.get(name, default)
+
+
+def _llm_ready():
+    checker = _cfg("LLM_READY_CHECK", _is_llm_ready)
+    return checker()
+
+
+def _pull_running():
+    checker = _cfg("PULL_RUNNING_CHECK", _is_pull_running)
+    return checker()
+
+
+def _start_pull_injected():
+    starter = _cfg("PULL_STARTER", _start_pull)
+    return starter()
+
+
+def _analysis_cache_path():
+    return _cfg("ANALYSIS_CACHE_PATH", ANALYSIS_CACHE_PATH)
+
+
+def _report_path():
+    return _cfg("REPORT_PATH", REPORT_PATH)
+
+
 def _read_progress():
     """Read pull progress for UI status/ETA."""
     if not os.path.exists(PROGRESS_PATH):
@@ -101,43 +122,17 @@ def _read_progress():
 
 def _compute_results():
     """Compute all stats for both 2026 cohort and all-time."""
-    return {
-        "total_applicants": count_total_applicants(),
-        "year_2026": {
-            "fall_2026_count": count_fall_2026_entries(True),
-            "percent_international": percent_international_students(True),
-            "average_metrics": average_metrics_all_applicants(True),
-            "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(True),
-            "acceptance_rate_fall_2026": acceptance_rate_fall_2026(True),
-            "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(True),
-            "jhu_masters_cs": count_jhu_masters_cs(True),
-            "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(True),
-            "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(True),
-            "additional_question_1": additional_question_1(True),
-            "additional_question_2": additional_question_2(True),
-        },
-        "all_time": {
-            "total_entries": count_total_applicants(),
-            "percent_international": percent_international_students(False),
-            "average_metrics": average_metrics_all_applicants(False),
-            "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(False),
-            "acceptance_rate_fall_2026": acceptance_rate_fall_2026(False),
-            "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(False),
-            "jhu_masters_cs": count_jhu_masters_cs(False),
-            "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(False),
-            "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(False),
-            "additional_question_1": additional_question_1(False),
-            "additional_question_2": additional_question_2(False),
-        },
-    }
+    compute = _cfg("COMPUTE_RESULTS", build_analysis_results)
+    return compute()
 
 
 def _read_cached_results():
     """Load cached analysis JSON if present and valid."""
-    if not os.path.exists(ANALYSIS_CACHE_PATH):
+    cache_path = _analysis_cache_path()
+    if not os.path.exists(cache_path):
         return None
     try:
-        with open(ANALYSIS_CACHE_PATH, "r") as f:
+        with open(cache_path, "r") as f:
             data = json.load(f)
             if not isinstance(data, dict):
                 return None
@@ -150,8 +145,9 @@ def _read_cached_results():
 
 def _write_cached_results(results):
     """Persist analysis results to disk for fast page loads."""
-    os.makedirs(os.path.dirname(ANALYSIS_CACHE_PATH), exist_ok=True)
-    with open(ANALYSIS_CACHE_PATH, "w") as f:
+    cache_path = _analysis_cache_path()
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, "w") as f:
         payload = dict(results)
         payload["_meta"] = {"updated_at": time.time()}
         json.dump(payload, f, indent=2)
@@ -172,7 +168,7 @@ def _read_latest_survey_id():
 def _read_last_pull_job():
     """Return the most recent pull job status from the DB."""
     try:
-        with psycopg.connect(**DB_CONFIG) as conn:
+        with psycopg.connect(**get_db_config()) as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -269,9 +265,9 @@ def _clear_pull_state():
 def _start_pull():
     """Start the pull subprocess and register it in the lock file."""
     global PULL_PROCESS, PULL_LAST_EXIT
-    if _is_pull_running():
+    if _pull_running():
         return False
-    if not _is_llm_ready():
+    if not _llm_ready():
         return False
 
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
@@ -315,8 +311,8 @@ def _start_pull():
 @bp.route("/projects/module-3")
 def module_3_project():
     """Render the Module 3 dashboard with current analysis results."""
-    pull_running = _is_pull_running()
-    llm_ready = _is_llm_ready()
+    pull_running = _pull_running()
+    llm_ready = _llm_ready()
     status = request.args.get("status")
     message = None
     if not pull_running and os.path.exists(DONE_PATH):
@@ -386,16 +382,19 @@ def module_3_project():
     if results is None:
         results = _compute_results()
         _write_cached_results(results)
-        if not os.path.exists(REPORT_PATH):
+        report_path = _report_path()
+        if not os.path.exists(report_path):
             try:
-                generate_pdf_report(results, REPORT_PATH)
+                generate_pdf_report(results, report_path)
             except Exception:
                 pass
-    elif not os.path.exists(REPORT_PATH):
-        try:
-            generate_pdf_report(results, REPORT_PATH)
-        except Exception:
-            pass
+    else:
+        report_path = _report_path()
+        if not os.path.exists(report_path):
+            try:
+                generate_pdf_report(results, report_path)
+            except Exception:
+                pass
     analysis_updated_at = None
     meta = results.get("_meta") if isinstance(results, dict) else None
     if meta and meta.get("updated_at"):
@@ -427,15 +426,63 @@ def module_3_project():
     )
 
 
+@bp.route("/analysis")
+def analysis_page():
+    """Alias for the Module 3 analysis dashboard."""
+    return module_3_project()
+
+
+def _run_update_analysis():
+    updater = _cfg("UPDATE_HANDLER", None)
+    if updater:
+        return updater()
+    results = _compute_results()
+    _write_cached_results(results)
+    try:
+        generate_pdf_report(results, _report_path())
+    except Exception:
+        pass
+    return results
+
+
+@bp.route("/pull-data", methods=["POST"])
+def pull_data_api():
+    """JSON endpoint for triggering a pull."""
+    if _pull_running():
+        return jsonify({"busy": True}), 409
+
+    handler = _cfg("PULL_HANDLER", None)
+    if handler:
+        result = handler()
+        return jsonify({"ok": True, "result": result}), 200
+
+    if not _llm_ready():
+        return jsonify({"ok": False, "error": "llm_not_ready"}), 503
+
+    started = _start_pull_injected()
+    if not started:
+        return jsonify({"ok": False, "error": "start_failed"}), 500
+    return jsonify({"ok": True}), 202
+
+
+@bp.route("/update-analysis", methods=["POST"])
+def update_analysis_api():
+    """JSON endpoint to recompute analysis."""
+    if _pull_running():
+        return jsonify({"busy": True}), 409
+    _run_update_analysis()
+    return jsonify({"ok": True}), 200
+
+
 @bp.route("/projects/module-3/pull-data", methods=["POST"])
 def pull_data():
     """Trigger a background pull if LLM is ready and no pull is running."""
-    if _is_pull_running():
+    if _pull_running():
         return redirect(url_for("m3_pages.module_3_project", status="pull_running"))
-    if not _is_llm_ready():
+    if not _llm_ready():
         return redirect(url_for("m3_pages.module_3_project", status="llm_not_ready"))
 
-    started = _start_pull()
+    started = _start_pull_injected()
     if not started:
         return redirect(url_for("m3_pages.module_3_project", status="llm_not_ready"))
     return redirect(url_for("m3_pages.module_3_project", status="pull_started"))
@@ -443,7 +490,7 @@ def pull_data():
 
 @bp.route("/projects/module-3/cancel-pull", methods=["POST"])
 def cancel_pull():
-    if _is_pull_running():
+    if _pull_running():
         _clear_pull_state()
         return redirect(url_for("m3_pages.module_3_project", status="pull_cancelled"))
     return redirect(url_for("m3_pages.module_3_project"))
@@ -452,21 +499,16 @@ def cancel_pull():
 @bp.route("/projects/module-3/update-analysis", methods=["POST"])
 def update_analysis():
     """Recompute analysis and regenerate the PDF report."""
-    if _is_pull_running():
+    if _pull_running():
         return redirect(url_for("m3_pages.module_3_project", status="pull_running"))
-    results = _compute_results()
-    _write_cached_results(results)
-    try:
-        generate_pdf_report(results, REPORT_PATH)
-    except Exception:
-        pass
+    _run_update_analysis()
     return redirect(url_for("m3_pages.module_3_project", status="analysis_updated"))
 
 
 @bp.route("/projects/module-3/pull-status")
 def pull_status():
     """Return JSON status for UI polling (LLM ready + progress)."""
-    running = _is_pull_running()
+    running = _pull_running()
     done_status = None
     if os.path.exists(DONE_PATH):
         try:
@@ -476,7 +518,7 @@ def pull_status():
             done_status = "unknown"
     return jsonify({
         "running": running,
-        "llm_ready": _is_llm_ready(),
+        "llm_ready": _llm_ready(),
         "progress": _read_progress(),
         "done": bool(done_status),
         "status": done_status

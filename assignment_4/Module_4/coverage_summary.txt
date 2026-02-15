@@ -1,0 +1,3 @@
+Paste the pytest-cov terminal summary here after running:
+
+pytest -m "web or buttons or analysis or db or integration"

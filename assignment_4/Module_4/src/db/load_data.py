@@ -8,9 +8,14 @@ import os
 
 import psycopg
 
-from db_config import DB_CONFIG
-from migrate import migrate
-from normalize import load_records, normalize_records
+try:
+    from .db_config import get_db_config
+    from .migrate import migrate
+    from .normalize import load_records, normalize_records
+except ImportError:  # fallback when run as a script
+    from db_config import get_db_config
+    from migrate import migrate
+    from normalize import load_records, normalize_records
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_PATH = os.path.join(BASE_DIR, "M3_material", "data", "extra_llm_applicant_data.json")
@@ -54,7 +59,7 @@ def main(path=DEFAULT_PATH) -> None:
         raise FileNotFoundError(f"Missing data file: {path}")
 
     records = normalize_records(load_records(path))
-    with psycopg.connect(**DB_CONFIG, autocommit=True) as conn:
+    with psycopg.connect(**get_db_config(), autocommit=True) as conn:
         create_table()
         insert_records(conn, records)
     print(f"Data load complete. Processed {len(records)} records.")

@@ -1,20 +1,20 @@
 <!-- Module 3 analysis dashboard template: renders pull controls, stats, and metrics. -->
 {% extends "base.html" %}
 
-{% block title %}Module 3 Project{% endblock %}
+{% block title %}Module 3 Analysis{% endblock %}
 
 {% block content %}
 <div class="module3-page">
 <section class="module3-hero">
     <div class="module3-hero-text">
-        <h1>Module 3 Project – PostgreSQL Queries</h1>
+        <h1>Module 3 Analysis – PostgreSQL Queries</h1>
         <p>Key applicant insights from the 2026 cycle, summarized from the database.</p>
     </div>
     <div class="module3-hero-actions">
         <div class="module3-hero-badge">PostgreSQL</div>
         <div class="hero-action-stack">
             <form action="{{ url_for('m3_pages.update_analysis') }}" method="post">
-                <button class="action-button" type="submit" {% if pull_running %}disabled{% endif %}>
+                <button class="action-button" type="submit" data-testid="update-analysis-btn" {% if pull_running %}disabled{% endif %}>
                     Update Analysis
                 </button>
             </form>
@@ -71,7 +71,7 @@
             </div>
             <div class="pull-actions">
                 <form action="{{ url_for('m3_pages.pull_data') }}" method="post">
-                    <button id="pull-data-button" class="action-button" type="submit" {% if pull_running or not llm_ready %}disabled{% endif %} {% if pull_running %}data-force-disabled="true"{% endif %}>
+                    <button id="pull-data-button" class="action-button" data-testid="pull-data-btn" type="submit" {% if pull_running or not llm_ready %}disabled{% endif %} {% if pull_running %}data-force-disabled="true"{% endif %}>
                         Pull Data
                     </button>
                 </form>
@@ -242,22 +242,34 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-label">2026 cohort entries</div>
-            <div class="stat-value">{{ results_2026.fall_2026_count }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_2026.fall_2026_count }}</div>
             <div class="stat-sub">Fall term in 2026 + 2026 acceptances</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">International share</div>
-            <div class="stat-value">{{ results_2026.percent_international }}%</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span>
+                {% if results_2026.percent_international is not none %}
+                {{ '%.2f'|format(results_2026.percent_international) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
             <div class="stat-sub">Not American or Other</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Acceptance rate</div>
-            <div class="stat-value">{{ results_2026.acceptance_rate_fall_2026 }}%</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span>
+                {% if results_2026.acceptance_rate_fall_2026 is not none %}
+                {{ '%.2f'|format(results_2026.acceptance_rate_fall_2026) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
             <div class="stat-sub">2026 cohort</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">JHU MS in CS</div>
-            <div class="stat-value">{{ results_2026.jhu_masters_cs }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_2026.jhu_masters_cs }}</div>
             <div class="stat-sub">Applicants matching program</div>
         </div>
     </div>
@@ -276,30 +288,30 @@
             <tbody>
                 <tr>
                     <td>GPA</td>
-                    <td>{{ results_2026.average_metrics.avg_gpa if results_2026.average_metrics.avg_gpa is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_2026.average_metrics.avg_gpa if results_2026.average_metrics.avg_gpa is not none else "N/A" }}</td>
                 </tr>
                 <tr>
                     <td>GRE Quant</td>
-                    <td>{{ results_2026.average_metrics.avg_gre if results_2026.average_metrics.avg_gre is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_2026.average_metrics.avg_gre if results_2026.average_metrics.avg_gre is not none else "N/A" }}</td>
                 </tr>
                 <tr>
                     <td>GRE Verbal</td>
-                    <td>{{ results_2026.average_metrics.avg_gre_v if results_2026.average_metrics.avg_gre_v is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_2026.average_metrics.avg_gre_v if results_2026.average_metrics.avg_gre_v is not none else "N/A" }}</td>
                 </tr>
                 <tr>
                     <td>GRE Analytical Writing</td>
-                    <td>{{ results_2026.average_metrics.avg_gre_aw if results_2026.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_2026.average_metrics.avg_gre_aw if results_2026.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
                 </tr>
             </tbody>
         </table>
         <div class="split-grid">
             <div class="split-item">
                 <div class="split-label">Avg GPA (American, 2026 cohort)</div>
-                <div class="split-value">{{ results_2026.avg_gpa_american_fall_2026 if results_2026.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
+                <div class="split-value"><span class="answer-label">Answer:</span> {{ results_2026.avg_gpa_american_fall_2026 if results_2026.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
             </div>
             <div class="split-item">
                 <div class="split-label">Avg GPA (Acceptances, 2026 cohort)</div>
-                <div class="split-value">{{ results_2026.avg_gpa_acceptances_fall_2026 if results_2026.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
+                <div class="split-value"><span class="answer-label">Answer:</span> {{ results_2026.avg_gpa_acceptances_fall_2026 if results_2026.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
             </div>
         </div>
     </div>
@@ -314,12 +326,12 @@
     <div class="compare-grid">
         <div class="stat-card">
             <div class="stat-label">Raw university names</div>
-            <div class="stat-value">{{ results_2026.top_phd_acceptances_2026_raw }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_2026.top_phd_acceptances_2026_raw }}</div>
             <div class="stat-sub">University field</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">LLM-generated names</div>
-            <div class="stat-value">{{ results_2026.top_phd_acceptances_2026_llm }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_2026.top_phd_acceptances_2026_llm }}</div>
             <div class="stat-sub">LLM university field</div>
         </div>
     </div>
@@ -334,12 +346,18 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-label">Percent reporting GPA</div>
-            <div class="stat-value">{{ results_2026.additional_question_1 }}%</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span>
+                {% if results_2026.additional_question_1 is not none %}
+                {{ '%.2f'|format(results_2026.additional_question_1) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
             <div class="stat-sub">Share of applicants with GPA</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Avg GRE (International)</div>
-            <div class="stat-value">{{ results_2026.additional_question_2 if results_2026.additional_question_2 is not none else "N/A" }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_2026.additional_question_2 if results_2026.additional_question_2 is not none else "N/A" }}</div>
             <div class="stat-sub">GRE Quant average</div>
         </div>
     </div>
@@ -353,22 +371,34 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-label">Applicants surveyed</div>
-            <div class="stat-value">{{ results_all.total_entries }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_all.total_entries }}</div>
             <div class="stat-sub">Total entries in the database</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">International share</div>
-            <div class="stat-value">{{ results_all.percent_international }}%</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span>
+                {% if results_all.percent_international is not none %}
+                {{ '%.2f'|format(results_all.percent_international) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
             <div class="stat-sub">Not American or Other</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Acceptance rate</div>
-            <div class="stat-value">{{ results_all.acceptance_rate_fall_2026 }}%</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span>
+                {% if results_all.acceptance_rate_fall_2026 is not none %}
+                {{ '%.2f'|format(results_all.acceptance_rate_fall_2026) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
             <div class="stat-sub">Across all entries</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">JHU MS in CS</div>
-            <div class="stat-value">{{ results_all.jhu_masters_cs }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_all.jhu_masters_cs }}</div>
             <div class="stat-sub">Applicants matching program</div>
         </div>
     </div>
@@ -387,30 +417,30 @@
             <tbody>
                 <tr>
                     <td>GPA</td>
-                    <td>{{ results_all.average_metrics.avg_gpa if results_all.average_metrics.avg_gpa is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_all.average_metrics.avg_gpa if results_all.average_metrics.avg_gpa is not none else "N/A" }}</td>
                 </tr>
                 <tr>
                     <td>GRE Quant</td>
-                    <td>{{ results_all.average_metrics.avg_gre if results_all.average_metrics.avg_gre is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_all.average_metrics.avg_gre if results_all.average_metrics.avg_gre is not none else "N/A" }}</td>
                 </tr>
                 <tr>
                     <td>GRE Verbal</td>
-                    <td>{{ results_all.average_metrics.avg_gre_v if results_all.average_metrics.avg_gre_v is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_all.average_metrics.avg_gre_v if results_all.average_metrics.avg_gre_v is not none else "N/A" }}</td>
                 </tr>
                 <tr>
                     <td>GRE Analytical Writing</td>
-                    <td>{{ results_all.average_metrics.avg_gre_aw if results_all.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
+                    <td><span class="answer-label">Answer:</span> {{ results_all.average_metrics.avg_gre_aw if results_all.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
                 </tr>
             </tbody>
         </table>
         <div class="split-grid">
             <div class="split-item">
                 <div class="split-label">Avg GPA (American)</div>
-                <div class="split-value">{{ results_all.avg_gpa_american_fall_2026 if results_all.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
+                <div class="split-value"><span class="answer-label">Answer:</span> {{ results_all.avg_gpa_american_fall_2026 if results_all.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
             </div>
             <div class="split-item">
                 <div class="split-label">Avg GPA (Acceptances)</div>
-                <div class="split-value">{{ results_all.avg_gpa_acceptances_fall_2026 if results_all.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
+                <div class="split-value"><span class="answer-label">Answer:</span> {{ results_all.avg_gpa_acceptances_fall_2026 if results_all.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
             </div>
         </div>
     </div>
@@ -425,12 +455,12 @@
     <div class="compare-grid">
         <div class="stat-card">
             <div class="stat-label">Raw university names</div>
-            <div class="stat-value">{{ results_all.top_phd_acceptances_2026_raw }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_all.top_phd_acceptances_2026_raw }}</div>
             <div class="stat-sub">University field</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">LLM-generated names</div>
-            <div class="stat-value">{{ results_all.top_phd_acceptances_2026_llm }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_all.top_phd_acceptances_2026_llm }}</div>
             <div class="stat-sub">LLM university field</div>
         </div>
     </div>
@@ -445,12 +475,18 @@
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-label">Percent reporting GPA</div>
-            <div class="stat-value">{{ results_all.additional_question_1 }}%</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span>
+                {% if results_all.additional_question_1 is not none %}
+                {{ '%.2f'|format(results_all.additional_question_1) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
             <div class="stat-sub">Share of applicants with GPA</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Avg GRE (International)</div>
-            <div class="stat-value">{{ results_all.additional_question_2 if results_all.additional_question_2 is not none else "N/A" }}</div>
+            <div class="stat-value"><span class="answer-label">Answer:</span> {{ results_all.additional_question_2 if results_all.additional_question_2 is not none else "N/A" }}</div>
             <div class="stat-sub">GRE Quant average</div>
         </div>
     </div>

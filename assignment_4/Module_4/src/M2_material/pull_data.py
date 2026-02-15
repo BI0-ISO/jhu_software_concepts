@@ -21,8 +21,12 @@ import urllib.error
 
 import psycopg
 
-from scrape import scrape_data, get_last_stop_reason, get_last_attempted_id, get_latest_survey_id
-from clean import clean_data
+try:
+    from .scrape import scrape_data, get_last_stop_reason, get_last_attempted_id, get_latest_survey_id
+    from .clean import clean_data
+except ImportError:  # fallback when run as a script
+    from scrape import scrape_data, get_last_stop_reason, get_last_attempted_id, get_latest_survey_id
+    from clean import clean_data
 
 # -------- Paths and config --------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -45,7 +49,7 @@ DONE_PATH = os.path.join(DB_DIR, "pull_data.done")
 LATEST_SURVEY_PATH = os.path.join(DB_DIR, "latest_survey_id.txt")
 PROGRESS_PATH = os.path.join(DB_DIR, "pull_progress.json")
 
-from db.db_config import DB_CONFIG
+from db.db_config import get_db_config
 from db.migrate import migrate
 from db.normalize import normalize_record
 
@@ -318,7 +322,7 @@ def main():
 
     conn = None
     try:
-        conn = psycopg.connect(**DB_CONFIG, autocommit=True)
+        conn = psycopg.connect(**get_db_config(), autocommit=True)
         ensure_table(conn)
 
         last_id = _get_max_entry_id_from_db(conn)

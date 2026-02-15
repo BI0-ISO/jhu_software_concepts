@@ -13,16 +13,16 @@ import os
 import psycopg
 
 try:
-    from .db_config import DB_CONFIG
+    from .db_config import get_db_config
 except ImportError:  # fallback when run as a script
-    from db_config import DB_CONFIG
+    from db_config import get_db_config
 
 MIGRATIONS_DIR = os.path.join(os.path.dirname(__file__), "migrations")
 
 
 def migrate() -> None:
     os.makedirs(MIGRATIONS_DIR, exist_ok=True)
-    with psycopg.connect(**DB_CONFIG, autocommit=True) as conn:
+    with psycopg.connect(**get_db_config(), autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "CREATE TABLE IF NOT EXISTS schema_migrations ("

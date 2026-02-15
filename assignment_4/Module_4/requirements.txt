@@ -1,0 +1,10 @@
+Flask
+psycopg
+beautifulsoup4
+urllib3
+huggingface_hub
+llama-cpp-python
+pytest
+pytest-cov
+sphinx
+sphinx-rtd-theme

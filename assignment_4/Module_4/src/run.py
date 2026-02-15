@@ -22,11 +22,17 @@ from flask import Flask
 from M1_material.board import bp as m1_bp
 from M3_material.board import bp as m3_bp
 
-app = Flask(__name__)
+def create_app(config: dict | None = None) -> Flask:
+    """Application factory for tests and production."""
+    app = Flask(__name__)
+    app.register_blueprint(m1_bp)
+    app.register_blueprint(m3_bp)
+    if config:
+        app.config.update(config)
+    return app
 
-# Register both blueprints so the full site is available from one app.
-app.register_blueprint(m1_bp)
-app.register_blueprint(m3_bp)
+
+app = create_app()
 
 # Keep a handle to the subprocess so we can shut it down cleanly.
 LLM_PROCESS = None

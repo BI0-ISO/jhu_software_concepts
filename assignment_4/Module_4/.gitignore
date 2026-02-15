@@ -1,0 +1,32 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# LLM model artifacts (too large for git)
+src/llm_hosting/models/
+src/llm_hosting/*.gguf
+src/llm_hosting/llm_server.log
+
+# Runtime pull artifacts (generated)
+src/db/*.log
+src/db/*.lock
+src/db/*.done
+src/db/pull_progress.json
+src/db/analysis_cache.json
+src/db/last_*.json
+src/db/latest_survey_id.txt
+src/db/last_scraped_id.txt
+src/db/last_100_entries.json
+
+# OS/editor noise
+.DS_Store

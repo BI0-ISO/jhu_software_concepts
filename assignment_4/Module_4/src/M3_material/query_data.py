@@ -4,7 +4,7 @@ SQL query helpers for Module 3 analytics.
 Each function opens a DB connection, runs a focused SQL query, and returns
 simple numeric results used by the dashboard and PDF report.
 """
-from db.db_config import DB_CONFIG
+from db.db_config import get_db_config
 import psycopg
 
 # Cohort definition:
@@ -22,7 +22,7 @@ def get_connection():
     """Open a DB connection or raise a helpful error."""
     try:
         # Psycopg3 allows connection as a context manager
-        conn = psycopg.connect(**DB_CONFIG)
+        conn = psycopg.connect(**get_db_config())
         return conn
     except Exception as e:
         raise RuntimeError(f"Error connecting to database: {e}") from e
@@ -289,3 +289,36 @@ def get_latest_db_id():
             )
             value = cur.fetchone()[0]
             return int(value) if value is not None else None
+
+
+def build_analysis_results():
+    """Return the analysis dict used by the Module 3 dashboard."""
+    return {
+        "total_applicants": count_total_applicants(),
+        "year_2026": {
+            "fall_2026_count": count_fall_2026_entries(True),
+            "percent_international": percent_international_students(True),
+            "average_metrics": average_metrics_all_applicants(True),
+            "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(True),
+            "acceptance_rate_fall_2026": acceptance_rate_fall_2026(True),
+            "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(True),
+            "jhu_masters_cs": count_jhu_masters_cs(True),
+            "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(True),
+            "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(True),
+            "additional_question_1": additional_question_1(True),
+            "additional_question_2": additional_question_2(True),
+        },
+        "all_time": {
+            "total_entries": count_total_applicants(),
+            "percent_international": percent_international_students(False),
+            "average_metrics": average_metrics_all_applicants(False),
+            "avg_gpa_american_fall_2026": avg_gpa_american_fall_2026(False),
+            "acceptance_rate_fall_2026": acceptance_rate_fall_2026(False),
+            "avg_gpa_acceptances_fall_2026": avg_gpa_acceptances_fall_2026(False),
+            "jhu_masters_cs": count_jhu_masters_cs(False),
+            "top_phd_acceptances_2026_raw": count_top_phd_acceptances_2026_raw_university(False),
+            "top_phd_acceptances_2026_llm": count_top_phd_acceptances_2026_llm(False),
+            "additional_question_1": additional_question_1(False),
+            "additional_question_2": additional_question_2(False),
+        },
+    }
