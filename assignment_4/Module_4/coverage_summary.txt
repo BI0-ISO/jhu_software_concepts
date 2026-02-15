@@ -1,3 +1,33 @@
-Paste the pytest-cov terminal summary here after running:
+(base) mckeysa1@KHKP7RC470-ML Module_4 % pytest -m "web or buttons or analysis or db or integration"                   
+........................................................................................................................................................ [ 89%]
+.................                                                                                                                                        [100%]
+======================================================================== tests coverage ========================================================================
+_______________________________________________________ coverage: platform darwin, python 3.12.7-final-0 _______________________________________________________
 
-pytest -m "web or buttons or analysis or db or integration"
+Name                                Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------
+src/M1_material/__init__.py             6      0   100%
+src/M1_material/board/__init__.py       3      0   100%
+src/M1_material/board/pages.py         18      0   100%
+src/M2_material/clean.py               85      0   100%
+src/M2_material/main.py                33      0   100%
+src/M2_material/pull_data.py          327      0   100%
+src/M2_material/scrape.py             109      0   100%
+src/M3_material/board/__init__.py       3      0   100%
+src/M3_material/board/pages.py        378      0   100%
+src/M3_material/query_cli.py           29      0   100%
+src/M3_material/query_data.py         118      0   100%
+src/M3_material/reporting.py          140      0   100%
+src/config.py                          11      0   100%
+src/db/__init__.py                      0      0   100%
+src/db/db_config.py                     9      0   100%
+src/db/import_extra_data.py            65      0   100%
+src/db/load_data.py                    30      0   100%
+src/db/migrate.py                      24      0   100%
+src/db/normalize.py                   139      0   100%
+src/llm_hosting/app.py                152      0   100%
+src/run.py                             66      0   100%
+-----------------------------------------------------------------
+TOTAL                                1745      0   100%
+Required test coverage of 100% reached. Total coverage: 100.00%
+169 passed in 7.19s
