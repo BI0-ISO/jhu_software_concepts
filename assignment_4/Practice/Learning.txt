@@ -1,0 +1,57 @@
+Helpful Links for coming back to: 
+
+1) https://www.youtube.com/watch?v=cHYq1MRoyI0 
+
+
+What is pytest? 
+
+1) Pytest is a testing framework for Python that has a auto-discovery feature based on file names 
+ - and if they have "test" at the start or end 
+
+Why Use it? 
+
+1) Simplified Syntax i.e. assert statments 
+2) Rich assertion introspection i.e. clear reports when things go wrong 
+3) Powerful fixture system (operations can be built and taken down quickly)
+
+
+What is Assert? 
+
+1) If a test is run and there is no error the tests will continue but if the "assertion" isn't true then 
+ - the program will stop and report 
+2) Think of it as saying hey does when the function is called with a given set of variables 
+ - does it return the value I expect it due i.e assert return ==
+
+
+Pytest Markings (Markers)
+
+1) Markers let you tag tests for selection, skipping, or expected failures.
+
+Common built-in markers:
+
+1) @pytest.mark.skip(reason="...") 
+ - Always skip this test with a reason.
+
+2) @pytest.mark.skipif(condition, reason="...")
+ - Skip only when the condition is true (ex: sys.platform == "win32").
+
+3) @pytest.mark.xfail(reason="...", strict=False)
+ - Expected to fail; if it passes it is marked xpass (set strict=True to fail).
+
+4) @pytest.mark.parametrize("arg1, arg2, expected", [...])
+ - Run the same test function with multiple input sets.
+
+5) @pytest.mark.usefixtures("fixture_name")
+ - Apply fixtures to a test without listing them as parameters.
+
+6) @pytest.mark.filterwarnings("ignore:...") 
+ - Control warnings for a test or module.
+
+Custom markers:
+
+1) @pytest.mark.slow
+ - You can define your own markers like slow, integration, or smoke.
+ - Run selected tests with: pytest -m slow
+ - Skip selected tests with: pytest -m "not slow"
+
+Note: If you use custom markers, add them in pytest.ini under [pytest] with "markers ="
