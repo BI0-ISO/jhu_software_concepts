@@ -1,0 +1,51 @@
+<!-- Projects landing page with links to Module 1 and Module 3 pages. -->
+{% extends "base.html" %}
+
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+<section class="projects-hero">
+    <div>
+        <h1>Projects</h1>
+        <p>A growing set of data and web projects built across the course modules.</p>
+    </div>
+    <div class="projects-pill">Portfolio</div>
+</section>
+
+<section class="projects-section">
+    <h2 class="section-title">Current Modules</h2>
+    <div class="projects-grid">
+        <a class="project-card" href="{{ url_for('m1_pages.module_1_project') }}">
+            <div class="project-tag">Module 1</div>
+            <div class="project-title">Flask Portfolio Website</div>
+            <div class="project-sub">Core site layout, navigation, and visual design.</div>
+        </a>
+        <a class="project-card" href="{{ url_for('m3_pages.module_3_project') }}">
+            <div class="project-tag">Module 3</div>
+            <div class="project-title">PostgreSQL Queries</div>
+            <div class="project-sub">Database‑driven analysis and reporting dashboard.</div>
+        </a>
+    </div>
+</section>
+
+<section class="projects-section">
+    <h2 class="section-title">Future Models</h2>
+    <p class="section-description">
+        Reserved space for upcoming models and visualizations as new coursework is completed.
+    </p>
+    <div class="projects-grid">
+        <div class="project-card placeholder">
+            <div class="project-title">Acceptance Forecasts</div>
+            <div class="project-sub">Predictive modeling for outcomes.</div>
+        </div>
+        <div class="project-card placeholder">
+            <div class="project-title">Program Benchmarks</div>
+            <div class="project-sub">Comparative analysis across universities.</div>
+        </div>
+        <div class="project-card placeholder">
+            <div class="project-title">Applicant Segmentation</div>
+            <div class="project-sub">Clustering by metrics and background.</div>
+        </div>
+    </div>
+</section>
+{% endblock %}

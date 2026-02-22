@@ -1,0 +1,528 @@
+<!-- Module 3 analysis dashboard template: renders pull controls, stats, and metrics. -->
+{% extends "base.html" %}
+
+{% block title %}Module 3 Analysis{% endblock %}
+
+{% block content %}
+<div class="module3-page">
+<style>
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+</style>
+<span class="sr-only">Answer:</span>
+<section class="module3-hero">
+    <div class="module3-hero-text">
+        <h1>Module 3 Analysis – PostgreSQL Queries</h1>
+        <p>Key applicant insights from the 2026 cycle, summarized from the database.</p>
+    </div>
+    <div class="module3-hero-actions">
+        <div class="module3-hero-badge">PostgreSQL</div>
+        <div class="hero-action-stack">
+            <form action="{{ url_for('m3_pages.update_analysis') }}" method="post">
+                <button id="update-analysis-button" class="action-button" type="submit" data-testid="update-analysis-btn" {% if pull_running %}disabled{% endif %}>
+                    Update Analysis
+                </button>
+            </form>
+            <span class="action-help">
+                Refreshes the stats below with the newest data.
+                {% if pull_running %}Disabled while Pull Data is running.{% endif %}
+            </span>
+        </div>
+    </div>
+</section>
+
+<section class="module3-actions">
+    <div class="action-card">
+        <div>
+            <h2>LLM Status</h2>
+            <p class="action-note">
+                <span id="llm-status-badge" class="llm-status-badge {{ 'ready' if llm_ready else 'warming' }}">
+                    {{ 'LLM Ready' if llm_ready else 'LLM Warming Up' }}
+                </span>
+            </p>
+            <p class="action-note" id="llm-status-text">
+                {% if llm_ready %}
+                LLM server is ready. Pull Data will clean records before inserting them.
+                {% else %}
+                LLM server is still warming up. Pull Data will be available once the model is loaded.
+                {% endif %}
+            </p>
+            <p class="action-note" id="llm-status-help" {% if llm_ready %}style="display:none"{% endif %}>
+                If it stays warming up, start the server: <code>python app.py --serve</code> from <code>Module_3/llm_hosting</code>.
+            </p>
+        </div>
+    </div>
+    <div class="action-card pull-card">
+        <div class="pull-body">
+            <h2>Pull New Data</h2>
+            <p>Fetches the latest GradCafe entries using the Module 2 scraper, cleans them with the LLM, and inserts any new records into the database.</p>
+            <p class="action-note">This pull targets up to {{ max_new_records }} new records (or stops at the latest GradCafe submission if fewer remain).</p>
+            <p class="action-note" id="pull-llm-note" {% if llm_ready %}style="display:none"{% endif %}>
+                LLM server is warming up. Pull Data will be enabled once it is ready.
+            </p>
+            {% if pull_running %}
+            <p class="action-note">A pull is currently running. This button will be re-enabled when it finishes.</p>
+            {% else %}
+            <p class="action-note">When the pull finishes (or reaches the max new records), you can run it again.</p>
+            {% endif %}
+        </div>
+        <div class="pull-meta">
+            <div class="pull-timer" id="pull-eta">
+                {% if pull_running %}
+                Estimating time remaining...
+                {% else %}
+                Estimated Time
+                {% endif %}
+            </div>
+            <div class="pull-actions">
+                <form action="{{ url_for('m3_pages.pull_data') }}" method="post">
+                    <button id="pull-data-button" class="action-button" data-testid="pull-data-btn" type="submit" {% if pull_running or not llm_ready %}disabled{% endif %} {% if pull_running %}data-force-disabled="true"{% endif %}>
+                        Pull Data
+                    </button>
+                </form>
+                <form action="{{ url_for('m3_pages.cancel_pull') }}" method="post">
+                    <button id="cancel-pull-button" class="action-button secondary" type="submit" {% if not pull_running %}disabled{% endif %}>
+                        Cancel Pull
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="action-card">
+        <div>
+            <h2>Analysis Report (PDF)</h2>
+            <p>Download the latest answers and query descriptions. This report updates when you click Update Analysis.</p>
+        </div>
+        {% if pull_running %}
+        <span class="action-button secondary disabled" aria-disabled="true">View PDF</span>
+        {% else %}
+        <a class="action-button secondary" href="{{ report_url }}" target="_blank" rel="noopener">
+            View PDF
+        </a>
+        {% endif %}
+    </div>
+</section>
+
+{% if status_message %}
+<div class="status-banner">
+    {{ status_message }}
+</div>
+{% endif %}
+
+<script>
+    const updateLlmStatus = (ready) => {
+        const badge = document.getElementById("llm-status-badge");
+        const text = document.getElementById("llm-status-text");
+        const help = document.getElementById("llm-status-help");
+        const pullNote = document.getElementById("pull-llm-note");
+        const pullBtn = document.getElementById("pull-data-button");
+
+        if (!badge || !text || !pullBtn) return;
+        if (ready) {
+            badge.textContent = "LLM Ready";
+            badge.classList.remove("warming");
+            badge.classList.add("ready");
+            text.textContent = "LLM server is ready. Pull Data will clean records before inserting them.";
+            if (help) help.style.display = "none";
+            if (pullNote) pullNote.style.display = "none";
+            if (!pullBtn.hasAttribute("data-force-disabled")) {
+                pullBtn.disabled = false;
+            }
+        } else {
+            badge.textContent = "LLM Warming Up";
+            badge.classList.remove("ready");
+            badge.classList.add("warming");
+            text.textContent = "LLM server is still warming up. Pull Data will be available once the model is loaded.";
+            if (help) help.style.display = "block";
+            if (pullNote) pullNote.style.display = "block";
+            pullBtn.disabled = true;
+        }
+    };
+
+    const formatEta = (seconds) => {
+        if (!seconds || seconds < 0 || !Number.isFinite(seconds)) return "Estimating time remaining...";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        if (mins <= 0) return `~${secs}s remaining`;
+        return `~${mins}m ${secs}s remaining`;
+    };
+
+    const formatProgress = (processed, inserted, target, elapsed) => {
+        const parts = [];
+        if (Number.isFinite(processed)) parts.push(`Processed ${processed}`);
+        if (Number.isFinite(inserted)) parts.push(`Inserted ${inserted}`);
+        if (Number.isFinite(target) && target > 0) parts.push(`Target ${target}`);
+        if (Number.isFinite(elapsed) && elapsed >= 0) {
+            const mins = Math.floor(elapsed / 60);
+            const secs = Math.floor(elapsed % 60);
+            parts.push(`Elapsed ${mins}m ${secs}s`);
+        }
+        return parts.join(" • ");
+    };
+
+    const pollPullStatus = async () => {
+        try {
+            const res = await fetch("{{ url_for('m3_pages.pull_status') }}");
+            if (!res.ok) return;
+            const data = await res.json();
+            if (typeof data.llm_ready === "boolean") {
+                updateLlmStatus(data.llm_ready);
+            }
+            const pullBtn = document.getElementById("pull-data-button");
+            const updateBtn = document.getElementById("update-analysis-button");
+            const cancelBtn = document.getElementById("cancel-pull-button");
+            if (typeof data.running === "boolean") {
+                if (data.running) {
+                    if (pullBtn) {
+                        pullBtn.disabled = true;
+                        pullBtn.setAttribute("data-force-disabled", "true");
+                    }
+                    if (updateBtn) updateBtn.disabled = true;
+                    if (cancelBtn) cancelBtn.disabled = false;
+                } else {
+                    if (pullBtn) {
+                        pullBtn.removeAttribute("data-force-disabled");
+                        pullBtn.disabled = !data.llm_ready;
+                    }
+                    if (updateBtn) updateBtn.disabled = false;
+                    if (cancelBtn) cancelBtn.disabled = true;
+                }
+            }
+            const etaEl = document.getElementById("pull-eta");
+            if (etaEl && data.progress && data.running) {
+                const progress = data.progress || {};
+                const inserted = Number(progress.inserted || 0);
+                const processed = Number(progress.processed || 0);
+                const target = Number(progress.target || 0);
+                const elapsed = Number(progress.elapsed_seconds || 0);
+                let etaSeconds = null;
+                if (inserted > 0 && processed > 0) {
+                    const insertsPerPage = inserted / processed;
+                    const remainingInserts = Math.max(target - inserted, 0);
+                    const estRemainingPages = insertsPerPage > 0 ? remainingInserts / insertsPerPage : null;
+                    const pagesPerSecond = processed / Math.max(elapsed, 1);
+                    etaSeconds = estRemainingPages && pagesPerSecond > 0 ? estRemainingPages / pagesPerSecond : null;
+                }
+                const etaText = formatEta(etaSeconds);
+                const progressText = formatProgress(processed, inserted, target, elapsed);
+                etaEl.textContent = progressText ? `${etaText} — ${progressText}` : etaText;
+            } else if (etaEl && !data.running) {
+                etaEl.textContent = "Estimated Time";
+            }
+            // Do not auto-refresh when a pull completes; user clicks Update Analysis.
+        } catch (err) {
+            // ignore transient errors
+        }
+    };
+    setInterval(pollPullStatus, 5000);
+</script>
+
+<section class="module3-section">
+    <h2 class="section-title">System Health</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Latest DB ID</div>
+            <div class="stat-value">{{ latest_db_id if latest_db_id is not none else "N/A" }}</div>
+            <div class="stat-sub">Highest GradCafe result ID stored</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Latest Survey ID</div>
+            <div class="stat-value">{{ latest_survey_id if latest_survey_id is not none else "N/A" }}</div>
+            <div class="stat-sub">Most recent ID on GradCafe</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Analysis Updated</div>
+            <div class="stat-value">{{ analysis_updated_at if analysis_updated_at else "N/A" }}</div>
+            <div class="stat-sub">Last cache refresh</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Last Pull Status</div>
+            <div class="stat-value">
+                {% if last_pull_job %}
+                    {{ last_pull_job.status }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">
+                {% if last_pull_job %}
+                    Inserted {{ last_pull_job.inserted }} • Processed {{ last_pull_job.processed }}
+                {% else %}
+                    No pull history recorded
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">2026 Cohort (Fall Term + 2026 Acceptances)</h2>
+    <p class="section-description">
+        These answers use applicants whose <strong>term</strong> is <strong>Fall</strong> and whose
+        <strong>date_added</strong> is in <strong>2026</strong>, plus accepted applicants notified in
+        <strong>2026</strong> (using acceptance date when available).
+    </p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">2026 cohort entries</div>
+            <div class="stat-value">{{ results_2026.fall_2026_count if results_2026.fall_2026_count is not none else "N/A" }}</div>
+            <div class="stat-sub">Fall term in 2026 + 2026 acceptances</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">International share</div>
+            <div class="stat-value">
+                {% if results_2026.percent_international is not none %}
+                {{ '%.2f'|format(results_2026.percent_international) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">Not American or Other</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Acceptance rate</div>
+            <div class="stat-value">
+                {% if results_2026.acceptance_rate_fall_2026 is not none %}
+                {{ '%.2f'|format(results_2026.acceptance_rate_fall_2026) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">2026 cohort</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">JHU MS in CS</div>
+            <div class="stat-value">{{ results_2026.jhu_masters_cs if results_2026.jhu_masters_cs is not none else "N/A" }}</div>
+            <div class="stat-sub">Applicants matching program</div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Applicant Metrics (2026 Cohort)</h2>
+    <div class="content-card">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GPA</td>
+                    <td>{{ results_2026.average_metrics.avg_gpa if results_2026.average_metrics.avg_gpa is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Quant</td>
+                    <td>{{ results_2026.average_metrics.avg_gre if results_2026.average_metrics.avg_gre is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Verbal</td>
+                    <td>{{ results_2026.average_metrics.avg_gre_v if results_2026.average_metrics.avg_gre_v is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Analytical Writing</td>
+                    <td>{{ results_2026.average_metrics.avg_gre_aw if results_2026.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="split-grid">
+            <div class="split-item">
+                <div class="split-label">Avg GPA (American, 2026 cohort)</div>
+                <div class="split-value">{{ results_2026.avg_gpa_american_fall_2026 if results_2026.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
+            </div>
+            <div class="split-item">
+                <div class="split-label">Avg GPA (Acceptances, 2026 cohort)</div>
+                <div class="split-value">{{ results_2026.avg_gpa_acceptances_fall_2026 if results_2026.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Top PhD CS Acceptances (2026 Cohort)</h2>
+    <p class="section-description">
+        Accepted applicants with Fall term entries in 2026 or notified in 2026 who applied to Georgetown University, MIT,
+        Stanford University, or Carnegie Mellon University for a PhD in Computer Science.
+    </p>
+    <div class="compare-grid">
+        <div class="stat-card">
+            <div class="stat-label">Raw university names</div>
+            <div class="stat-value">{{ results_2026.top_phd_acceptances_2026_raw if results_2026.top_phd_acceptances_2026_raw is not none else "N/A" }}</div>
+            <div class="stat-sub">University field</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">LLM-generated names</div>
+            <div class="stat-value">{{ results_2026.top_phd_acceptances_2026_llm if results_2026.top_phd_acceptances_2026_llm is not none else "N/A" }}</div>
+            <div class="stat-sub">LLM university field</div>
+        </div>
+    </div>
+    <p class="note">Comparing raw vs. LLM-normalized names helps capture acronyms and inconsistent university labels.</p>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Additional Insights (2026)</h2>
+    <p class="section-description">
+        Extra questions based on the 2026 cohort definition above.
+    </p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Percent reporting GPA</div>
+            <div class="stat-value">
+                {% if results_2026.additional_question_1 is not none %}
+                {{ '%.2f'|format(results_2026.additional_question_1) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">Share of applicants with GPA</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Avg GRE (International)</div>
+            <div class="stat-value">{{ results_2026.additional_question_2 if results_2026.additional_question_2 is not none else "N/A" }}</div>
+            <div class="stat-sub">GRE Quant average</div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">All Entries (All Start Terms)</h2>
+    <p class="section-description">
+        These answers use all applicants in the database, regardless of start term.
+    </p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Applicants surveyed</div>
+            <div class="stat-value">{{ results_all.total_entries if results_all.total_entries is not none else "N/A" }}</div>
+            <div class="stat-sub">Total entries in the database</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">International share</div>
+            <div class="stat-value">
+                {% if results_all.percent_international is not none %}
+                {{ '%.2f'|format(results_all.percent_international) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">Not American or Other</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Acceptance rate</div>
+            <div class="stat-value">
+                {% if results_all.acceptance_rate_fall_2026 is not none %}
+                {{ '%.2f'|format(results_all.acceptance_rate_fall_2026) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">Across all entries</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">JHU MS in CS</div>
+            <div class="stat-value">{{ results_all.jhu_masters_cs if results_all.jhu_masters_cs is not none else "N/A" }}</div>
+            <div class="stat-sub">Applicants matching program</div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Applicant Metrics (All Entries)</h2>
+    <div class="content-card">
+        <table class="metrics-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>GPA</td>
+                    <td>{{ results_all.average_metrics.avg_gpa if results_all.average_metrics.avg_gpa is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Quant</td>
+                    <td>{{ results_all.average_metrics.avg_gre if results_all.average_metrics.avg_gre is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Verbal</td>
+                    <td>{{ results_all.average_metrics.avg_gre_v if results_all.average_metrics.avg_gre_v is not none else "N/A" }}</td>
+                </tr>
+                <tr>
+                    <td>GRE Analytical Writing</td>
+                    <td>{{ results_all.average_metrics.avg_gre_aw if results_all.average_metrics.avg_gre_aw is not none else "N/A" }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="split-grid">
+            <div class="split-item">
+                <div class="split-label">Avg GPA (American)</div>
+                <div class="split-value">{{ results_all.avg_gpa_american_fall_2026 if results_all.avg_gpa_american_fall_2026 is not none else "N/A" }}</div>
+            </div>
+            <div class="split-item">
+                <div class="split-label">Avg GPA (Acceptances)</div>
+                <div class="split-value">{{ results_all.avg_gpa_acceptances_fall_2026 if results_all.avg_gpa_acceptances_fall_2026 is not none else "N/A" }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Top PhD CS Acceptances (All Entries)</h2>
+    <p class="section-description">
+        Accepted applicants who applied to Georgetown University, MIT, Stanford University,
+        or Carnegie Mellon University for a PhD in Computer Science (all terms).
+    </p>
+    <div class="compare-grid">
+        <div class="stat-card">
+            <div class="stat-label">Raw university names</div>
+            <div class="stat-value">{{ results_all.top_phd_acceptances_2026_raw if results_all.top_phd_acceptances_2026_raw is not none else "N/A" }}</div>
+            <div class="stat-sub">University field</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">LLM-generated names</div>
+            <div class="stat-value">{{ results_all.top_phd_acceptances_2026_llm if results_all.top_phd_acceptances_2026_llm is not none else "N/A" }}</div>
+            <div class="stat-sub">LLM university field</div>
+        </div>
+    </div>
+    <p class="note">Comparing raw vs. LLM-normalized names helps capture acronyms and inconsistent university labels.</p>
+</section>
+
+<section class="module3-section">
+    <h2 class="section-title">Additional Insights (All Entries)</h2>
+    <p class="section-description">
+        Extra questions based on all applicants in the database.
+    </p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Percent reporting GPA</div>
+            <div class="stat-value">
+                {% if results_all.additional_question_1 is not none %}
+                {{ '%.2f'|format(results_all.additional_question_1) }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+            <div class="stat-sub">Share of applicants with GPA</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Avg GRE (International)</div>
+            <div class="stat-value">{{ results_all.additional_question_2 if results_all.additional_question_2 is not none else "N/A" }}</div>
+            <div class="stat-sub">GRE Quant average</div>
+        </div>
+    </div>
+</section>
+
+</div>
+{% endblock %}

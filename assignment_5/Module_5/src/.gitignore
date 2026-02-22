@@ -1,0 +1,66 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ---------- Virtual Environments ----------
+venv/
+.env/
+.venv/
+env/
+
+# ---------- Environment variables ----------
+.env
+
+# ---------- Data files (large / sensitive) ----------
+data/
+M3_material/data/
+*.json
+*.jsonl
+
+# ---------- Large artifacts / models ----------
+llm_hosting/models/
+*.gguf
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.joblib
+*.parquet
+*.feather
+*.arrow
+*.sqlite
+*.db
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.gz
+*.bz2
+*.xz
+
+# ---------- Generated reports / caches ----------
+static/reports/
+db/analysis_cache.json
+db/pull_progress.json
+
+# ---------- VS Code ----------
+.vscode/
+
+# ---------- OS junk ----------
+.DS_Store
+Thumbs.db
+
+# ---------- Logs ----------
+*.log
+
+# ---------- Module 3 runtime files ----------
+db/pull_data.log
+db/pull_data.lock
+db/pull_data.done
+db/last_scraped_id.txt
+db/last_100_entries.json
+db/latest_survey_id.txt
